@@ -6,6 +6,10 @@ import yt_dlp
 from . import pipeline, publicar, yt
 
 
+# a Rockstar derruba vídeo com final da história; pula lives de zeramento
+SPOILER = ("finale", "ending", "final mission", "final boss", "zerando", "final do jogo")
+
+
 def _linhas(caminho):
     if not os.path.exists(caminho):
         return []
@@ -26,7 +30,8 @@ def videos_recentes(canal, quantos=5):
             for e in info.get("entries") or []:
                 titulo = (e or {}).get("title") or ""
                 if e and e.get("id") and e.get("live_status") != "is_live" \
-                        and any(t in titulo.lower() for t in ("gta 6", "gta vi", "gta6")):
+                        and any(t in titulo.lower() for t in ("gta 6", "gta vi", "gta6")) \
+                        and not any(t in titulo.lower() for t in SPOILER):
                     ids.append(e.get("url") or f"https://www.youtube.com/watch?v={e['id']}")
     return ids
 

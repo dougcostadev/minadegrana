@@ -10,13 +10,19 @@ def volume_por_segundo(caminho):
     """RMS do áudio por segundo, decodificado em mono 16 kHz pelo ffmpeg."""
     cmd = ["ffmpeg", "-v", "error", "-i", caminho, "-vn", "-ac", "1", "-ar", str(TAXA),
            "-f", "s16le", "-"]
-    bruto = subprocess.run(cmd, capture_output=True, check=True).stdout
-    amostras = np.frombuffer(bruto, dtype=np.int16).astype(np.float32) / 32768.0
-    n = len(amostras) // TAXA
-    if n == 0:
-        return np.zeros(0)
-    blocos = amostras[: n * TAXA].reshape(n, TAXA)
-    return np.sqrt((blocos ** 2).mean(axis=1))
+    # lê em blocos de 1 minuto: uma live de 48h não cabe inteira na memória
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    rms = []
+    while True:
+        bruto = proc.stdout.read(TAXA * 2 * 60)
+        n = len(bruto) // (TAXA * 2)
+        if n == 0:
+            break
+        blocos = np.frombuffer(bruto[: n * TAXA * 2], dtype=np.int16).astype(np.float32) / 32768.0
+        rms.append(np.sqrt((blocos.reshape(n, TAXA) ** 2).mean(axis=1)))
+    if proc.wait() != 0:
+        raise RuntimeError(f"ffmpeg não conseguiu ler o áudio de {caminho}")
+    return np.concatenate(rms) if rms else np.zeros(0)
 
 
 def _z(x):
