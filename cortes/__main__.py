@@ -29,7 +29,7 @@ def main():
     au.add_argument("--max-videos", type=int, default=1)
     au.add_argument("--quantos", type=int, default=3)
     au.add_argument("--legendas", action="store_true")
-    au.add_argument("--titulos", default="en", choices=["pt", "en"])
+    au.add_argument("--titulos", default="pt", choices=["pt", "en"])
     au.add_argument("--privacidade", default="private", choices=["private", "unlisted", "public"])
     sub.add_parser("autorizar", help="gera o YT_REFRESH_TOKEN (rodar uma vez, na sua máquina)")
 
