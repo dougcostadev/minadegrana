@@ -71,7 +71,8 @@ python -m cortes pacote
 Gera `saida/POSTAR.md` (e `saida/postar.html`) com a agenda sugerida e, para cada corte, o
 título, a descrição, as tags e as legendas de cada rede.
 
-- Envie ao usuário os `.mp4` e o `saida/POSTAR.md`. Ele posta manualmente nas três redes.
+- Envie ao usuário os vídeos numerados de `saida/postar/` (já na ordem de postagem) e o
+  `saida/POSTAR.md`. Ele posta manualmente nas três redes.
 - Se publicou no YouTube, informe os links.
 
 ## 6. Salvar o estado

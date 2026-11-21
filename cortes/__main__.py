@@ -92,7 +92,7 @@ def main():
     if a.cmd == "pacote":
         from . import postagem
         for n, m in enumerate(postagem.pacote(), 1):
-            print(f"{n:02d}  {m['postar_em_texto']:<20} {m['canal_original']:<14} {m.get('gancho') or ''}")
+            print(f"{n:02d}  {m['postar_em_texto']:<20} {m['nome']:<16} {m.get('gancho') or ''}")
         print("Textos em saida/POSTAR.md e saida/postar.html")
         return
     if a.cmd == "autorizar":

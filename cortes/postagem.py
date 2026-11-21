@@ -5,6 +5,7 @@ import html
 import json
 import os
 import re
+import shutil
 import subprocess
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -15,17 +16,26 @@ HORARIOS = ["12:00", "18:30", "21:00"]
 DIAS = ["seg", "ter", "qua", "qui", "sex", "sáb", "dom"]
 
 
+# login da plataforma -> nome pelo qual o público conhece o streamer
+NOMES = {"tioorochitwitch": "Tio Orochi", "paulinholokobr": "Paulinho o Loko", "xarola_": "Xarola",
+         "rincon061tv": "Rincon", "gabepeixe": "Gabepeixe", "bistecone": "Bistecone"}
+
+
+def nome(canal):
+    return NOMES.get(canal.lower(), canal)
+
+
 def _tag(canal):
-    return "#" + re.sub(r"[^a-z0-9]", "", canal.lower())
+    return "#" + re.sub(r"[^a-z0-9]", "", nome(canal).lower())
 
 
 def textos(m):
     """Título, descrição, legenda e tags prontos para colar em cada rede."""
-    canal = m["canal_original"]
+    canal = nome(m["canal_original"])
     titulo = m.get("titulo_base") or re.sub(r"\s*😱?\s*#.*$", "", m.get("titulo", "")).strip()
     legenda = m.get("legenda") or titulo
     link = m.get("link_original") or ""
-    tag = _tag(canal)
+    tag = _tag(m["canal_original"])
     titulo_yt = f"{titulo[:83].rstrip()} #gta6 #shorts"
     return {
         "youtube": {
@@ -46,7 +56,8 @@ def carregar(saida="saida"):
         with open(caminho, encoding="utf-8") as f:
             m = json.load(f)
         if os.path.exists(m.get("arquivo", "")) and m.get("canal_original"):
-            m.setdefault("redes", textos(m))
+            m["redes"] = textos(m)
+            m["nome"] = nome(m["canal_original"])
             metas.append(m)
     return metas
 
@@ -56,7 +67,7 @@ def agendar(metas, agora=None):
     agora = agora or datetime.now(FUSO)
     por_canal = {}
     for m in sorted(metas, key=lambda m: m.get("views_do_clipe", 0), reverse=True):
-        por_canal.setdefault(m["canal_original"], []).append(m)
+        por_canal.setdefault(m["nome"], []).append(m)
     filas = sorted(por_canal.values(), key=lambda f: f[0].get("views_do_clipe", 0), reverse=True)
     ordem = []
     while any(filas):
@@ -119,8 +130,8 @@ def escrever_md(ordem, caminho):
     for n, m in enumerate(ordem, 1):
         r = m["redes"]
         linhas += [
-            f"## {n:02d} · {m['canal_original']} · {m['postar_em_texto']}", "",
-            f"Arquivo: `{os.path.basename(m['arquivo'])}`  ",
+            f"## {n:02d} · {m['nome']} · {m['postar_em_texto']}", "",
+            f"Arquivo: `{os.path.basename(m.get('arquivo_postagem') or m['arquivo'])}`  ",
             f"Gancho na tela: {m.get('gancho') or '(sem gancho)'}", "",
             "**YouTube Shorts — título**", "", "```", r["youtube"]["titulo"], "```", "",
             "**YouTube Shorts — descrição**", "", "```", r["youtube"]["descricao"], "```", "",
@@ -149,7 +160,7 @@ def escrever_html(ordem, caminho):
         css = f.read()
     with open(os.path.join(here, "pauta.js"), encoding="utf-8") as f:
         js = f.read()
-    canais = sorted({m["canal_original"] for m in ordem})
+    canais = sorted({m["nome"] for m in ordem})
     agenda, cartoes = [], []
     for n, m in enumerate(ordem, 1):
         cid = re.sub(r"[^a-z0-9]", "", str(m.get("id") or os.path.basename(m["arquivo"])).lower())[-14:]
@@ -157,7 +168,7 @@ def escrever_html(ordem, caminho):
         agenda.append(
             f'<li><a href="#c{cid}"><span class="quando">{e(m["postar_em_texto"])}</span>'
             f'<span class="num">{n:02d}</span><span class="oque">{e(m.get("gancho") or m.get("titulo_base", ""))}'
-            f'</span><span class="quem">{e(m["canal_original"])}</span></a></li>')
+            f'</span><span class="quem">{e(m["nome"])}</span></a></li>')
         redes = ""
         for chave, nome, campos in (
                 ("yt", "YouTube Shorts", [("Título", r["youtube"]["titulo"]), ("Descrição", r["youtube"]["descricao"]),
@@ -174,9 +185,9 @@ def escrever_html(ordem, caminho):
             f'<img class="mini" src="{_miniatura(m["arquivo"])}" alt="Quadro do corte {n:02d}" width="108" height="192">'
             f'<div class="resumo"><p class="ordem">Corte {n:02d}</p>'
             f'<h3>{e(m.get("gancho") or m.get("titulo_base", ""))}</h3>'
-            f'<dl><div><dt>Streamer</dt><dd>{e(m["canal_original"])}</dd></div>'
+            f'<dl><div><dt>Streamer</dt><dd>{e(m["nome"])}</dd></div>'
             f'<div><dt>Postar</dt><dd>{e(m["postar_em_texto"])}</dd></div>'
-            f'<div><dt>Arquivo</dt><dd class="arquivo">{e(os.path.basename(m["arquivo"]))}</dd></div>'
+            f'<div><dt>Arquivo</dt><dd class="arquivo">{e(os.path.basename(m.get("arquivo_postagem") or m["arquivo"]))}</dd></div>'
             + (f'<div><dt>Clipe original</dt><dd>{views:,} views</dd></div>'.replace(",", ".") if views else "")
             + f'</dl></div></div><div class="redes">{redes}</div></article>')
     guia = "".join(f'<section><h3>{e(t)}</h3><ul>{"".join(f"<li>{e(i)}</li>" for i in itens)}</ul></section>'
@@ -219,6 +230,17 @@ def pacote(saida="saida"):
     ordem = agendar(carregar(saida))
     if not ordem:
         return []
+    # cópias numeradas na ordem de postagem, para não haver dúvida de qual vídeo é qual
+    pasta = os.path.join(saida, "postar")
+    os.makedirs(pasta, exist_ok=True)
+    for antigo in glob.glob(os.path.join(pasta, "*.mp4")):
+        os.remove(antigo)
+    for n, m in enumerate(ordem, 1):
+        m["arquivo_postagem"] = os.path.join(pasta, f"{n:02d}-{os.path.basename(m['arquivo'])}")
+        try:
+            os.link(m["arquivo"], m["arquivo_postagem"])
+        except OSError:
+            shutil.copyfile(m["arquivo"], m["arquivo_postagem"])
     escrever_md(ordem, os.path.join(saida, "POSTAR.md"))
     escrever_html(ordem, os.path.join(saida, "postar.html"))
     return ordem

@@ -65,11 +65,22 @@ def baixar_trecho(url, pasta, inicio, fim, altura=1080):
         return base + ".mp4"
 
 
-def _pegar(u):
+def _pegar(u, faixa=None):
+    """GET simples; `faixa` = (inicio, tamanho) em bytes para pedir só um pedaço do arquivo."""
     import urllib.request
-    req = urllib.request.Request(u, headers={"User-Agent": "Mozilla/5.0"})
-    with urllib.request.urlopen(req, timeout=60) as r:
-        return r.read()
+    cab = {"User-Agent": "Mozilla/5.0"}
+    if faixa:
+        cab["Range"] = f"bytes={faixa[0]}-{faixa[0] + faixa[1] - 1}"
+    with urllib.request.urlopen(urllib.request.Request(u, headers=cab), timeout=60) as r:
+        dados = r.read()
+    # servidor que ignora Range devolve o arquivo inteiro: recorta aqui
+    return dados[faixa[0]:faixa[0] + faixa[1]] if faixa and len(dados) > faixa[1] else dados
+
+
+def _faixa(texto, fim_anterior):
+    """'tamanho[@inicio]' de EXT-X-BYTERANGE -> (inicio, tamanho)."""
+    tam, _, ini = texto.strip().strip('"').partition("@")
+    return (int(ini) if ini else fim_anterior, int(tam))
 
 
 def baixar_hls(url, destino_sem_ext, inicio=0.0, fim=float("inf")):
@@ -77,6 +88,7 @@ def baixar_hls(url, destino_sem_ext, inicio=0.0, fim=float("inf")):
 
     Retorna (arquivo, deslocamento) — o trecho pedido começa `deslocamento` segundos dentro
     do arquivo — ou None se a playlist não tiver segmentos nesse intervalo.
+    Respeita EXT-X-BYTERANGE (a Kick guarda o clipe inteiro num só .ts e aponta pedaços dele).
     """
     from urllib.parse import urljoin
     lista = _pegar(url).decode()
@@ -86,24 +98,34 @@ def baixar_hls(url, destino_sem_ext, inicio=0.0, fim=float("inf")):
                      for i, l in enumerate(linhas[:-1]) if l.startswith("#EXT-X-STREAM-INF")]
         return baixar_hls(urljoin(url, max(variantes)[1]), destino_sem_ext, inicio, fim)
     t, dur, init, partes, desloc = 0.0, 0.0, None, [], None
+    faixa, fim_faixa = None, {}
     for linha in lista.splitlines():
         linha = linha.strip()
         if linha.startswith("#EXT-X-MAP"):
-            init = urljoin(url, re.search(r'URI="([^"]+)"', linha).group(1))
+            u = urljoin(url, re.search(r'URI="([^"]+)"', linha).group(1))
+            br = re.search(r'BYTERANGE="([^"]+)"', linha)
+            init = (u, _faixa(br.group(1), 0) if br else None)
         elif linha.startswith("#EXTINF:"):
             dur = float(linha[8:].split(",")[0])
+        elif linha.startswith("#EXT-X-BYTERANGE:"):
+            faixa = linha.split(":", 1)[1]
         elif linha and not linha.startswith("#"):
+            u = urljoin(url, linha)
+            f = _faixa(faixa, fim_faixa.get(u, 0)) if faixa else None
+            if f:
+                fim_faixa[u] = f[0] + f[1]
             if t + dur > inicio and t < fim:
                 if desloc is None:
                     desloc = inicio - t
-                partes.append(urljoin(url, linha))
+                partes.append((u, f))
             t += dur
+            faixa = None
     if not partes:
         return None
     destino = f"{destino_sem_ext}.{'mp4' if init else 'ts'}"
-    with open(destino, "wb") as f:
-        for u in ([init] if init else []) + partes:
-            f.write(_pegar(u))
+    with open(destino, "wb") as arq:
+        for u, f in ([init] if init else []) + partes:
+            arq.write(_pegar(u, f))
     return destino, max(0.0, desloc)
 
 
