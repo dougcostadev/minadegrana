@@ -1,5 +1,6 @@
-/* Layout: coluna única de leitura; cada corte é uma ficha com miniatura à esquerda e três
-   blocos de texto (um por rede) prontos para copiar. Paleta do pôr do sol de Leonida. */
+/* Layout: coluna única de leitura, agrupada por dia; cada corte é uma ficha com o vídeo à
+   esquerda (prévia e download) e três blocos de texto, um por rede, prontos para copiar.
+   Paleta do pôr do sol de Leonida. */
 :root {
   --fundo: #fbf5f6;
   --papel: #ffffff;
@@ -43,18 +44,17 @@ h1 { margin: 0; font-family: var(--display); font-weight: 400; font-size: clamp(
 h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 24px; letter-spacing: .03em; text-transform: uppercase; }
 .agenda { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; border-top: 1px solid var(--linha); }
 .agenda a {
-  display: grid; grid-template-columns: max-content 2.2em minmax(0, 1fr) auto; gap: 12px; align-items: baseline;
+  display: grid; grid-template-columns: max-content minmax(0, 1fr) auto auto; gap: 12px; align-items: baseline;
   padding: 9px 2px; border-bottom: 1px solid var(--linha); color: inherit; text-decoration: none;
 }
 .agenda a:hover .oque, .agenda a:focus-visible .oque { color: var(--destaque); }
-.quando { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; min-width: 10.5em; }
-.num { font-family: var(--display); color: var(--sol); font-size: 16px; }
+.quando { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; min-width: 7.5em; }
 .oque { font-weight: 600; min-width: 0; }
 .quem { color: var(--suave); font-size: 13px; }
 .corte { background: var(--papel); border: 1px solid var(--linha); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 16px; scroll-margin-top: 16px; }
 .corte + .corte { margin-top: 4px; }
 .cabeca { display: flex; gap: 16px; align-items: flex-start; }
-.mini { width: 108px; height: 192px; object-fit: cover; border-radius: 4px; flex: none; background: var(--campo); }
+.mini { width: 144px; height: 256px; object-fit: cover; border-radius: 4px; flex: none; background: var(--campo); }
 .resumo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
 .ordem { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--sol); }
 h3 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 22px; line-height: 1.15; letter-spacing: .02em; text-transform: uppercase; text-wrap: balance; }
@@ -82,9 +82,24 @@ h4 { margin: 0; font-size: 14px; font-weight: 700; color: var(--marca-rede); }
 .guia h3 { font-size: 18px; color: var(--destaque); }
 .guia ul { margin: 8px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; color: var(--tinta); }
 @media (max-width: 520px) {
-  .agenda a { grid-template-columns: 2em minmax(0, 1fr); row-gap: 2px; }
+  .agenda a { grid-template-columns: minmax(0, 1fr) auto; row-gap: 2px; }
   .quando { grid-column: 1 / -1; font-size: 13px; color: var(--suave); min-width: 0; }
-  .quem { grid-column: 2; }
-  .mini { width: 84px; height: 149px; }
+  .quem { grid-column: 1; }
+  .mini { width: 112px; height: 199px; }
 }
 @media (prefers-reduced-motion: no-preference) { .copiar { transition: background .12s, color .12s; } }
+.aviso { margin: 0; padding: 12px 14px; background: var(--campo); border-left: 3px solid var(--sol); border-radius: 4px; color: var(--tinta); }
+.dias { display: flex; flex-direction: column; gap: 32px; }
+.dia { display: flex; flex-direction: column; gap: 14px; }
+.dia > h2 { border-bottom: 1px solid var(--linha); padding-bottom: 6px; }
+.status { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--suave); border: 1px solid var(--linha); border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
+.status.ok { color: var(--ok); border-color: currentColor; }
+.acoes { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 4px; }
+.baixar { font: 700 14px var(--texto); color: var(--papel); background: var(--destaque); border: 0; border-radius: 4px; padding: 9px 14px; cursor: pointer; }
+.baixar:disabled { opacity: .6; cursor: default; }
+.abrir { color: var(--destaque); font-weight: 600; font-size: 13.5px; }
+.sem-video { margin: 4px 0 0; color: var(--suave); font-size: 13px; }
+.baixar:focus-visible, .abrir:focus-visible, .anteriores summary:focus-visible { outline: 2px solid var(--destaque); outline-offset: 2px; }
+.anteriores summary { cursor: pointer; font-family: var(--display); font-size: 24px; letter-spacing: .03em; text-transform: uppercase; }
+.anteriores .conta { font-family: var(--texto); font-size: 14px; color: var(--suave); letter-spacing: 0; }
+.anteriores[open] summary { margin-bottom: 16px; }

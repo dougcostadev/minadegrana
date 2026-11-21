@@ -38,6 +38,8 @@ def main():
     fi = sub.add_parser("fila", help="salva em fila.json os clipes em alta ainda não usados, de todos os canais")
     fi.add_argument("--saida", default="fila.json")
     fi.add_argument("--canais", default="canais.txt", help="arquivo com a lista de canais")
+    fi.add_argument("--periodo", default="ambos", choices=["dia", "semana", "ambos"],
+                    help="dia = só clipes das últimas 24h")
     pv = sub.add_parser("previa", help="baixa o clipe N da fila e gera uma folha de quadros para avaliar")
     pv.add_argument("n", type=int)
     mo = sub.add_parser("montar", help="gera (e publica, se houver credenciais) o clipe N da fila com o gancho dado")
@@ -46,7 +48,15 @@ def main():
     mo.add_argument("--titulo", required=True)
     mo.add_argument("--legenda", help="1 ou 2 frases para a legenda do post, terminando com uma pergunta")
     mo.add_argument("--privacidade", default="private", choices=["private", "unlisted", "public"])
-    sub.add_parser("pacote", help="gera saida/POSTAR.md e saida/postar.html com textos e agenda de todos os cortes")
+    pc = sub.add_parser("pacote", help="fecha o lote: agenda, vídeos numerados em saida/postar/ e POSTAR.md")
+    pc.add_argument("--rodada", action="store_true", help="produção do dia: tudo no mesmo dia, de hora em hora")
+    pc.add_argument("--agora", help="data/hora de referência (ISO), para refazer uma agenda")
+    li = sub.add_parser("linhas", help="gera os documentos do banco da pauta a partir do mapa de anexos")
+    li.add_argument("assets", nargs="?", help="JSON {arquivo numerado: id do anexo}")
+    sub.add_parser("pagina", help="monta saida/pauta.html (a página da pauta, lida do banco)")
+    es = sub.add_parser("estado", help="leva e traz a lista de clipes já usados do banco da pauta")
+    es.add_argument("acao", choices=["carregar", "exportar"])
+    es.add_argument("arquivo", nargs="?", default="saida/estado.json")
     de = sub.add_parser("descartar", help="marca o clipe N da fila como usado, sem gerar")
     de.add_argument("n", type=int)
     for x in (pv, mo, de):
@@ -68,7 +78,7 @@ def main():
         return
     if a.cmd == "fila":
         from . import auto
-        fila = auto.montar_fila(a.canais)
+        fila = auto.montar_fila(a.canais, periodo=a.periodo)
         with open(a.saida, "w", encoding="utf-8") as f:
             json.dump(fila, f, ensure_ascii=False, indent=1)
         for n, c in enumerate(fila):
@@ -90,10 +100,34 @@ def main():
             print(json.dumps(meta, ensure_ascii=False))
         return
     if a.cmd == "pacote":
+        from datetime import datetime
         from . import postagem
-        for n, m in enumerate(postagem.pacote(), 1):
+        agora = datetime.fromisoformat(a.agora).replace(tzinfo=postagem.FUSO) if a.agora else None
+        for n, m in enumerate(postagem.pacote(rodada=a.rodada, agora=agora), 1):
             print(f"{n:02d}  {m['postar_em_texto']:<20} {m['nome']:<16} {m.get('gancho') or ''}")
-        print("Textos em saida/POSTAR.md e saida/postar.html")
+        print("Vídeos numerados em saida/postar/ e textos em saida/POSTAR.md")
+        return
+    if a.cmd == "linhas":
+        from . import postagem
+        mapa = {}
+        if a.assets:
+            with open(a.assets, encoding="utf-8") as f:
+                mapa = json.load(f)
+        writes, faltando = postagem.linhas(mapa_assets=mapa)
+        print(f"{len(writes)} documento(s) em saida/linhas/ e a lista de gravações em saida/lote.json")
+        if faltando:
+            print("SEM ANEXO (o botão de baixar não vai funcionar):", ", ".join(faltando))
+        return
+    if a.cmd == "pagina":
+        from . import postagem
+        print(postagem.pagina())
+        return
+    if a.cmd == "estado":
+        from . import auto
+        if a.acao == "carregar":
+            print(auto.estado_carregar(a.arquivo), "id(s) novos trazidos do banco")
+        else:
+            print(auto.estado_exportar(a.arquivo), "id(s) recentes gravados em", a.arquivo)
         return
     if a.cmd == "autorizar":
         from . import publicar

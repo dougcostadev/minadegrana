@@ -55,6 +55,8 @@ def carregar(saida="saida"):
     for caminho in sorted(glob.glob(os.path.join(saida, "*.json"))):
         with open(caminho, encoding="utf-8") as f:
             m = json.load(f)
+        if not isinstance(m, dict):  # agenda.json e lote.json também moram em saida/
+            continue
         if os.path.exists(m.get("arquivo", "")) and m.get("canal_original"):
             m["redes"] = textos(m)
             m["nome"] = nome(m["canal_original"])
@@ -62,8 +64,13 @@ def carregar(saida="saida"):
     return metas
 
 
-def agendar(metas, agora=None):
-    """Ordena intercalando os streamers (os mais vistos primeiro) e dá um horário a cada corte."""
+def agendar(metas, agora=None, rodada=False):
+    """Ordena intercalando os streamers (os mais vistos primeiro) e dá um horário a cada corte.
+
+    Padrão: um corte por horário fixo (12h00, 18h30, 21h00), dia após dia.
+    `rodada=True` (produção do dia): o primeiro vai no próximo horário fixo e os demais de hora
+    em hora depois dele, tudo no mesmo dia.
+    """
     agora = agora or datetime.now(FUSO)
     por_canal = {}
     for m in sorted(metas, key=lambda m: m.get("views_do_clipe", 0), reverse=True):
@@ -74,6 +81,20 @@ def agendar(metas, agora=None):
         for f in filas:
             if f:
                 ordem.append(f.pop(0))
+    if rodada:
+        base = None
+        for d in range(3):
+            for h in HORARIOS:
+                hh, mi = map(int, h.split(":"))
+                q = datetime.combine(agora.date() + timedelta(days=d), datetime.min.time(), FUSO) \
+                    .replace(hour=hh, minute=mi)
+                if base is None and q >= agora + timedelta(minutes=15):
+                    base = q
+        for k, m in enumerate(ordem):
+            quando = base + timedelta(hours=k)
+            m["postar_em"] = quando.isoformat()
+            m["postar_em_texto"] = f"{DIAS[quando.weekday()]} {quando:%d/%m} às {quando:%H:%M}"
+        return ordem
     dia, i = agora.date(), 0
     for m in ordem:
         while True:
@@ -89,14 +110,14 @@ def agendar(metas, agora=None):
     return ordem
 
 
-def _miniatura(video):
+def _capa(video, destino):
+    """Grava um quadro do vídeo (360x640) para servir de capa na pauta."""
     r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0",
                         video], capture_output=True, text=True)
     t = float(r.stdout.strip() or 0) * 0.4
-    jpg = subprocess.run(["ffmpeg", "-v", "error", "-ss", f"{t:.2f}", "-i", video, "-frames:v", "1", "-vf",
-                          "scale=216:384", "-q:v", "7", "-f", "image2", "-c:v", "mjpeg", "-"],
-                         capture_output=True).stdout
-    return "data:image/jpeg;base64," + base64.b64encode(jpg).decode() if jpg else ""
+    subprocess.run(["ffmpeg", "-y", "-v", "error", "-ss", f"{t:.2f}", "-i", video, "-frames:v", "1", "-vf",
+                    "scale=360:640", "-q:v", "5", destino], check=True)
+    return destino
 
 
 GUIA = [
@@ -146,101 +167,93 @@ def escrever_md(ordem, caminho):
         f.write("\n".join(linhas))
 
 
-def _campo(rotulo, texto, ident):
-    e = html.escape
-    return (f'<div class="campo"><div class="campo-topo"><span class="rotulo">{e(rotulo)}</span>'
-            f'<button type="button" class="copiar" data-alvo="{ident}">Copiar</button></div>'
-            f'<pre id="{ident}" class="texto" tabindex="0">{e(texto)}</pre></div>')
+def pagina(destino="saida/pauta.html"):
+    """Monta a página da pauta (um arquivo só, com CSS e JS embutidos).
+
+    A página não carrega nenhum corte no código: ela lê tudo do banco de dados dela mesma
+    (coleção `cortes`), então só precisa ser republicada quando o layout muda.
+    """
+    aqui = os.path.dirname(os.path.abspath(__file__))
+    partes = {}
+    for nome_arq in ("pauta.html", "pauta.css", "pauta.js"):
+        with open(os.path.join(aqui, nome_arq), encoding="utf-8") as f:
+            partes[nome_arq] = f.read()
+    guia = "".join(
+        f'<section><h3>{html.escape(t)}</h3><ul>{"".join(f"<li>{html.escape(i)}</li>" for i in itens)}</ul></section>'
+        for t, itens in GUIA)
+    doc = (partes["pauta.html"].replace("/*CSS*/", partes["pauta.css"])
+           .replace("/*JS*/", partes["pauta.js"]).replace("<!--GUIA-->", guia))
+    os.makedirs(os.path.dirname(destino) or ".", exist_ok=True)
+    with open(destino, "w", encoding="utf-8") as f:
+        f.write(doc)
+    return destino
 
 
-def escrever_html(ordem, caminho):
-    e = html.escape
-    here = os.path.dirname(os.path.abspath(__file__))
-    with open(os.path.join(here, "pauta.css"), encoding="utf-8") as f:
-        css = f.read()
-    with open(os.path.join(here, "pauta.js"), encoding="utf-8") as f:
-        js = f.read()
-    canais = sorted({m["nome"] for m in ordem})
-    agenda, cartoes = [], []
-    for n, m in enumerate(ordem, 1):
-        cid = re.sub(r"[^a-z0-9]", "", str(m.get("id") or os.path.basename(m["arquivo"])).lower())[-14:]
-        r = m["redes"]
-        agenda.append(
-            f'<li><a href="#c{cid}"><span class="quando">{e(m["postar_em_texto"])}</span>'
-            f'<span class="num">{n:02d}</span><span class="oque">{e(m.get("gancho") or m.get("titulo_base", ""))}'
-            f'</span><span class="quem">{e(m["nome"])}</span></a></li>')
-        redes = ""
-        for chave, nome, campos in (
-                ("yt", "YouTube Shorts", [("Título", r["youtube"]["titulo"]), ("Descrição", r["youtube"]["descricao"]),
-                                           ("Tags", r["youtube"]["tags"])]),
-                ("tt", "TikTok", [("Legenda", r["tiktok"])]),
-                ("ig", "Instagram Reels", [("Legenda", r["instagram"])])):
-            blocos = "".join(_campo(rot, txt, f"t-{cid}-{chave}-{i}") for i, (rot, txt) in enumerate(campos))
-            redes += (f'<section class="rede rede-{chave}"><header><h4>{nome}</h4>'
-                      f'<label class="feito"><input type="checkbox" id="p-{cid}-{chave}"> postado</label>'
-                      f'</header>{blocos}</section>')
-        views = m.get("views_do_clipe")
-        cartoes.append(
-            f'<article class="corte" id="c{cid}"><div class="cabeca">'
-            f'<img class="mini" src="{_miniatura(m["arquivo"])}" alt="Quadro do corte {n:02d}" width="108" height="192">'
-            f'<div class="resumo"><p class="ordem">Corte {n:02d}</p>'
-            f'<h3>{e(m.get("gancho") or m.get("titulo_base", ""))}</h3>'
-            f'<dl><div><dt>Streamer</dt><dd>{e(m["nome"])}</dd></div>'
-            f'<div><dt>Postar</dt><dd>{e(m["postar_em_texto"])}</dd></div>'
-            f'<div><dt>Arquivo</dt><dd class="arquivo">{e(os.path.basename(m.get("arquivo_postagem") or m["arquivo"]))}</dd></div>'
-            + (f'<div><dt>Clipe original</dt><dd>{views:,} views</dd></div>'.replace(",", ".") if views else "")
-            + f'</dl></div></div><div class="redes">{redes}</div></article>')
-    guia = "".join(f'<section><h3>{e(t)}</h3><ul>{"".join(f"<li>{e(i)}</li>" for i in itens)}</ul></section>'
-                   for t, itens in GUIA)
-    pagina = f"""<title>Pauta Leonida Clipes</title>
-<meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&display=swap">
-<style>
-{css}
-</style>
-<div class="pagina">
-<header class="topo">
-  <p class="marca">Leonida Clipes</p>
-  <h1>Pauta de postagem</h1>
-  <p class="sub">{len(ordem)} {"corte" if len(ordem) == 1 else "cortes"} de {len(canais)} {"streamer" if len(canais) == 1 else "streamers"} ({e(", ".join(canais))}). Cada corte traz o texto pronto para YouTube Shorts, TikTok e Instagram Reels. Poste o mesmo corte nas três redes no horário indicado e marque o que já foi.</p>
-</header>
-<section class="bloco" aria-labelledby="h-agenda">
-  <h2 id="h-agenda">Agenda</h2>
-  <ol class="agenda">{"".join(agenda)}</ol>
-</section>
-<section class="bloco" aria-labelledby="h-cortes">
-  <h2 id="h-cortes">Cortes</h2>
-  {"".join(cartoes)}
-</section>
-<section class="bloco guia" aria-labelledby="h-guia">
-  <h2 id="h-guia">Como postar</h2>
-  <div class="guia-grade">{guia}</div>
-</section>
-</div>
-<script>
-{js}
-</script>
-"""
-    with open(caminho, "w", encoding="utf-8") as f:
-        f.write(pagina)
+def _doc_id(m):
+    return re.sub(r"[^A-Za-z0-9_-]", "", str(m.get("id") or os.path.basename(m["arquivo"])))[-40:]
 
 
-def pacote(saida="saida"):
-    """Gera saida/POSTAR.md e saida/postar.html a partir dos cortes já renderizados."""
-    ordem = agendar(carregar(saida))
+def linhas(saida="saida", mapa_assets=None):
+    """Prepara um documento JSON por corte para o banco da pauta (coleção `cortes`).
+
+    `mapa_assets`: {nome do arquivo numerado: id do anexo} devolvido pelo upload dos vídeos
+    (.mp4) e das capas (.jpg) de saida/postar/.
+    Grava saida/linhas/<id>.json e saida/lote.json (a lista `writes` para gravar tudo de uma vez).
+    """
+    mapa_assets = mapa_assets or {}
+    with open(os.path.join(saida, "agenda.json"), encoding="utf-8") as f:
+        ordem = json.load(f)
+    pasta = os.path.join(saida, "linhas")
+    os.makedirs(pasta, exist_ok=True)
+    writes, faltando = [], []
+    for m in ordem:
+        arquivo = os.path.basename(m["arquivo_postagem"])
+        asset = mapa_assets.get(arquivo)
+        if not asset:
+            faltando.append(arquivo)
+        doc = {
+            "id": str(m.get("id") or ""), "nome": m["nome"], "canal": m["canal_original"],
+            "plataforma": m.get("plataforma"), "gancho": m.get("gancho") or m.get("titulo_base") or "",
+            "titulo_base": m.get("titulo_base"), "legenda": m.get("legenda"), "redes": m["redes"],
+            "arquivo": arquivo, "asset": asset,
+            "capa": mapa_assets.get(os.path.splitext(arquivo)[0] + ".jpg"),
+            "postar_em": m["postar_em"], "postar_em_texto": m["postar_em_texto"],
+            "views": m.get("views_do_clipe"), "duracao_s": m.get("duracao_s"),
+            "link_original": m.get("link_original"),
+            "criado_em": datetime.now(FUSO).isoformat(timespec="seconds"),
+            "postado": {"yt": False, "tt": False, "ig": False},
+        }
+        caminho = os.path.abspath(os.path.join(pasta, _doc_id(m) + ".json"))
+        with open(caminho, "w", encoding="utf-8") as f:
+            json.dump(doc, f, ensure_ascii=False)
+        writes.append({"op": "set", "collection": "cortes", "doc_id": _doc_id(m), "file_path": caminho})
+    with open(os.path.join(saida, "lote.json"), "w", encoding="utf-8") as f:
+        json.dump(writes, f, ensure_ascii=False, indent=1)
+    return writes, faltando
+
+
+def pacote(saida="saida", rodada=False, agora=None):
+    """Fecha o lote: agenda, vídeos numerados em saida/postar/, POSTAR.md e agenda.json.
+
+    Depois de subir os vídeos como anexos da pauta, `linhas()` gera os documentos do banco.
+    """
+    metas = carregar(saida)
+    from . import render
+    for m in metas:  # garante que todo vídeo cabe como anexo da pauta
+        render.compactar(m["arquivo"])
+    ordem = agendar(metas, agora, rodada)
     if not ordem:
         return []
     # cópias numeradas na ordem de postagem, para não haver dúvida de qual vídeo é qual
     pasta = os.path.join(saida, "postar")
     os.makedirs(pasta, exist_ok=True)
-    for antigo in glob.glob(os.path.join(pasta, "*.mp4")):
+    for antigo in glob.glob(os.path.join(pasta, "*.mp4")) + glob.glob(os.path.join(pasta, "*.jpg")):
         os.remove(antigo)
     for n, m in enumerate(ordem, 1):
         m["arquivo_postagem"] = os.path.join(pasta, f"{n:02d}-{os.path.basename(m['arquivo'])}")
-        try:
-            os.link(m["arquivo"], m["arquivo_postagem"])
-        except OSError:
-            shutil.copyfile(m["arquivo"], m["arquivo_postagem"])
+        shutil.copyfile(m["arquivo"], m["arquivo_postagem"])  # cópia de verdade: o upload recusa hard link
+        _capa(m["arquivo"], os.path.splitext(m["arquivo_postagem"])[0] + ".jpg")
     escrever_md(ordem, os.path.join(saida, "POSTAR.md"))
-    escrever_html(ordem, os.path.join(saida, "postar.html"))
+    with open(os.path.join(saida, "agenda.json"), "w", encoding="utf-8") as f:
+        json.dump(ordem, f, ensure_ascii=False)
     return ordem

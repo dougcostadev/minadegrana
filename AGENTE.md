@@ -1,8 +1,17 @@
-# Roteiro da rodada automática — Leonida Clipes
+# Roteiro da rodada — Leonida Clipes
 
-Você é o editor do canal **Leonida Clipes** (@leonidaclipes): cortes verticais de GTA 6 a
-partir de clipes em alta de streamers brasileiros. Cada rodada produz **até 3 cortes**, de
-**canais diferentes sempre que possível**. Trabalhe sozinho até o fim; não pergunte nada.
+Você é o editor do canal **Leonida Clipes** (@leonidaclipes): cortes verticais de GTA 6 feitos
+a partir de clipes em alta de streamers brasileiros. O dono do canal posta manualmente no
+YouTube Shorts, TikTok e Instagram Reels, guiado pela **pauta**:
+
+    PAUTA = https://claude.ai/artifact/SWNK3aL1MaR9eqGsBfFVZc
+
+A pauta é uma página que lê tudo do banco de dados dela mesma. Sua rodada termina quando os
+cortes novos estão lá dentro, com o vídeo anexado e os textos de cada rede.
+
+**Objetivo de cada rodada:** até 2 cortes com o que viralizou **nas últimas 24 horas**, de
+streamers diferentes, para postar **hoje**. Conteúdo velho só entra se o dia não rendeu nada.
+Trabalhe sozinho até o fim; não pergunte nada.
 
 ## 1. Preparar
 
@@ -11,20 +20,28 @@ git checkout main && git pull -q origin main
 python -m pip install -q -r requirements.txt   # use sempre o mesmo `python` que roda o projeto
 ```
 
-O `ffmpeg` precisa existir. Se algo do código estiver quebrado, faça a correção mínima,
-teste e suba junto no commit final.
+O `ffmpeg` precisa existir. Se a ferramenta `ArtifactData` não estiver na sua lista, carregue-a
+com ToolSearch (`select:ArtifactData`). Se algo do código estiver quebrado, faça a correção
+mínima e siga.
 
-## 2. Montar a fila
+## 2. Trazer a lista de clipes já usados
+
+A lista mora no banco da pauta, não no git.
+
+1. `ArtifactData` com `action: "get"`, `url: PAUTA`, `collection: "estado"`, `doc_id: "usados"`,
+   `out_dir: "<caminho absoluto>/trabalho/db"`. **Anote a `version`** que o resultado mostra.
+2. `python -m cortes estado carregar trabalho/db/estado/usados.json`
+
+## 3. Montar a fila do dia
 
 ```bash
-python -m cortes fila
+python -m cortes fila --periodo dia
 ```
 
-Lista os clipes em alta ainda não usados, já intercalando os canais de `canais.txt`.
+Lista os clipes das últimas 24h ainda não usados, intercalando os canais de `canais.txt`.
+Só se a avaliação do dia não render nenhum corte, rode de novo com `--periodo semana`.
 
-## 3. Avaliar (no máximo 10 prévias por rodada)
-
-Para cada candidato, na ordem da fila:
+## 4. Avaliar (no máximo 10 prévias por rodada)
 
 ```bash
 python -m cortes previa N     # imprime o caminho de uma folha com 10 quadros do clipe
@@ -32,59 +49,70 @@ python -m cortes previa N     # imprime o caminho de uma folha com 10 quadros do
 
 Abra a imagem e veja o que acontece. **Descarte** (`python -m cortes descartar N`) se for:
 
-- cena de sexo, nudez ou insinuação sexual explícita do jogo;
+- cena de sexo, nudez ou insinuação sexual explícita do jogo (são muito comuns: descarte sem hesitar);
 - propaganda de patrocinador, sorteio, cupom, pedido de sub;
 - conversa com o chat ou momento sem situação e desfecho compreensíveis para quem não viu a live;
 - final ou reviravolta grande da história (spoiler);
-- qualquer coisa com ofensa a grupo de pessoas.
+- qualquer coisa com ofensa a grupo de pessoas;
+- prévia que responde "não é GTA 6 (ou não baixou)".
 
-Canais listados em `nao_cortar.txt` nunca são usados.
+Canais listados em `nao_cortar.txt` nunca são usados. Se os 10 quadros não bastarem, extraia
+mais quadros com ffmpeg do arquivo em `trabalho/`.
 
-## 4. Montar os aprovados
+## 5. Montar os aprovados
 
 Escreva para cada um:
 
 - **gancho**: a frase fixa na tela. Até 8 palavras, específica do que acontece, cria
   curiosidade sem entregar o desfecho. Sem palavrão, sem emoji. Não invente fatos.
-  Exemplos do tom: `ELE SÓ FOI CONSERTAR A PIA...`, `ALAN DIRIGINDO IGUAL EM SÃO PAULO`.
+  Exemplos do tom: `ELE SÓ FOI CONSERTAR A PIA...`, `O CHAT DEU 1 MINUTO PRA ELE BATER`.
 - **título**: até 70 caracteres, com o nome do streamer e "GTA 6", sem hashtag.
 - **legenda**: 1 ou 2 frases curtas para o texto do post. Conta a situação e termina com uma
   pergunta que puxe comentário. No máximo 2 emojis, sem hashtag (o código acrescenta), sem
   palavrão, sem inventar fato.
 
 ```bash
-python -m cortes montar N --gancho "..." --titulo "..." --legenda "..." --privacidade "${PRIVACIDADE:-private}"
+python -m cortes montar N --gancho "..." --titulo "..." --legenda "..."
 ```
 
-O comando gera `saida/<nome>.mp4` e `.json` (com os textos prontos para YouTube, TikTok e
-Instagram), publica no YouTube se as variáveis `YT_CLIENT_ID`, `YT_CLIENT_SECRET` e
-`YT_REFRESH_TOKEN` existirem, e marca o clipe como usado. Confira um quadro do resultado
-(`ffmpeg -ss 5 -i saida/x.mp4 -frames:v 1 q.png`) para ver se o gancho está legível e a cam
-foi recortada direito.
+Confira um quadro do resultado (`ffmpeg -y -v error -ss 5 -i saida/x.mp4 -frames:v 1 -vf scale=360:-1 q.png`):
+o gancho precisa estar legível e a parte de cima deve mostrar o rosto do streamer. Se a cam
+saiu errada, apague o `.mp4` e o `.json` desse corte de `saida/` e siga com os outros.
 
-## 5. Entregar
+## 6. Fechar o lote do dia
 
 ```bash
-python -m cortes pacote
+python -m cortes pacote --rodada
 ```
 
-Gera `saida/POSTAR.md` (e `saida/postar.html`) com a agenda sugerida e, para cada corte, o
-título, a descrição, as tags e as legendas de cada rede.
+Dá a cada corte um horário de hoje (o primeiro no próximo horário fixo, 12h00, 18h30 ou 21h00;
+os demais de hora em hora) e grava em `saida/postar/` os vídeos numerados (`NN-*.mp4`) e as
+capas (`NN-*.jpg`).
 
-- Envie ao usuário os vídeos numerados de `saida/postar/` (já na ordem de postagem) e o
-  `saida/POSTAR.md`. Ele posta manualmente nas três redes.
-- Se publicou no YouTube, informe os links.
+## 7. Colocar na pauta
 
-## 6. Salvar o estado
+1. Ferramenta `Artifact`, `action: "read"`, `url: PAUTA` (uma vez por sessão).
+2. Ferramenta `Artifact` com `url: PAUTA`, `asset: true` e `file_paths` com o caminho absoluto
+   de **todos** os `.mp4` e `.jpg` de `saida/postar/`. O resultado dá um `id` para cada arquivo.
+3. Grave `saida/assets.json` no formato `{"01-nome.mp4": "<id>", "01-nome.jpg": "<id>", ...}`.
+4. `python -m cortes linhas saida/assets.json` — gera um documento por corte e `saida/lote.json`.
+5. `ArtifactData` com `action: "batch"`, `url: PAUTA` e `writes` igual ao conteúdo de
+   `saida/lote.json` (as entradas já apontam para os arquivos com `file_path`).
 
-```bash
-git add processados.txt && git commit -qm "Atualiza processados" && git push -q origin main
-```
+Nunca republique a página, nunca apague anexos nem documentos da pauta.
+Se o upload dos anexos for recusado, rode `python -m cortes linhas` sem o mapa, grave os
+documentos assim mesmo e envie os `.mp4` ao usuário como arquivos.
 
-Se o push para `main` for recusado, suba no branch que a sessão permitir e avise o usuário.
-Sem esse commit, a próxima rodada repete clipes.
+## 8. Guardar a lista de usados
 
-## 7. Resumo final
+Sempre, mesmo quando nenhum corte saiu (os descartados também contam):
 
-Em poucas linhas: quantos cortes saíram, de quais streamers, o que foi descartado e por quê,
-e qualquer problema encontrado. Se a fila não tiver nada que preste, não force: diga isso.
+1. `python -m cortes estado exportar`
+2. `ArtifactData` com `action: "set"`, `url: PAUTA`, `collection: "estado"`, `doc_id: "usados"`,
+   `file_path: "<caminho absoluto>/saida/estado.json"` e `if_version` com a versão anotada no passo 2.
+
+## 9. Resumo final
+
+Em poucas linhas: quais cortes entraram na pauta e para que horário, de quais streamers, o que
+foi descartado e por quê, e qualquer problema. Termine com o link da PAUTA.
+Se nada prestou, não force: diga isso.

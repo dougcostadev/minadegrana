@@ -54,20 +54,26 @@ propaganda, sorteio, cena de sexo do jogo e spoiler do final. Sem a chave, o gan
 título que o espectador deu ao clipe, quando ele presta, e um filtro por palavras barra o
 resto.
 
-## Pacote de postagem
+## Pauta de postagem
 
-Cada corte gerado com `montar` guarda no `.json` os textos prontos para cada rede. O comando
-abaixo junta tudo numa pauta, com a ordem e o horário sugeridos (12h00, 18h30 e 21h00 de
-Brasília, intercalando os streamers):
+A pauta é uma página (um Artifact do Claude) que lista os cortes por dia, com o vídeo para
+baixar, a capa e os textos prontos para YouTube Shorts, TikTok e Instagram Reels. Ela lê tudo
+do banco de dados dela mesma, então cada rodada só acrescenta dados:
 
 ```bash
-python -m cortes fila                 # clipes em alta de todos os canais de canais.txt
+python -m cortes fila --periodo dia   # clipes das últimas 24h de todos os canais de canais.txt
 python -m cortes previa 3             # folha de quadros do clipe 3, para avaliar
 python -m cortes montar 3 --gancho "..." --titulo "..." --legenda "..."
-python -m cortes pacote               # saida/POSTAR.md e saida/postar.html
+python -m cortes pacote --rodada      # agenda de hoje, vídeos e capas numerados em saida/postar/
+python -m cortes linhas saida/assets.json   # documentos do banco, depois de anexar os vídeos
 ```
 
-O roteiro completo de uma rodada, usado pelas sessões agendadas, está em `AGENTE.md`.
+`python -m cortes pagina` monta a página (`saida/pauta.html`) quando o layout muda.
+A lista de clipes já usados fica no documento `estado/usados` do mesmo banco
+(`python -m cortes estado carregar|exportar`).
+
+O roteiro completo de uma rodada está em `AGENTE.md`; a skill `/cortes-do-dia` executa esse
+roteiro sob demanda, e uma tarefa agendada o executa três vezes por dia.
 
 ## Automático (GitHub Actions)
 

@@ -1,5 +1,7 @@
 """Modo automático: vídeos novos dos canais de canais.txt -> cortes -> (opcional) upload."""
+import json
 import os
+from datetime import date, timedelta
 from itertools import zip_longest
 
 import yt_dlp
@@ -17,6 +19,44 @@ def _linhas(caminho):
         return []
     with open(caminho, encoding="utf-8") as f:
         return [l.strip() for l in f if l.strip() and not l.startswith("#")]
+
+
+def usados(processados="processados.txt"):
+    """{id do clipe: data em que foi usado}. Linhas antigas sem data contam como de hoje."""
+    hoje = date.today().isoformat()
+    saida = {}
+    for linha in _linhas(processados):
+        partes = linha.split()
+        saida[partes[0]] = partes[1] if len(partes) > 1 else hoje
+    return saida
+
+
+def estado_exportar(destino="saida/estado.json", processados="processados.txt", dias=8):
+    """Grava os usados recentes num JSON para guardar no banco da pauta.
+
+    Só os últimos `dias` importam: a fila nunca olha clipes mais velhos que uma semana.
+    """
+    corte = (date.today() - timedelta(days=dias)).isoformat()
+    ids = {i: d for i, d in usados(processados).items() if d >= corte}
+    os.makedirs(os.path.dirname(destino) or ".", exist_ok=True)
+    with open(destino, "w", encoding="utf-8") as f:
+        json.dump({"ids": ids, "atualizado": date.today().isoformat()}, f)
+    return len(ids)
+
+
+def estado_carregar(origem, processados="processados.txt"):
+    """Junta ao processados.txt os ids lidos do banco da pauta (documento estado/usados)."""
+    with open(origem, encoding="utf-8") as f:
+        doc = json.load(f)
+    for chave in ("data", "fields", "document"):  # o arquivo pode vir com um envelope
+        if isinstance(doc.get(chave), dict) and "ids" in doc[chave]:
+            doc = doc[chave]
+    ja = usados(processados)
+    novos = {i: d for i, d in (doc.get("ids") or {}).items() if i not in ja}
+    with open(processados, "a", encoding="utf-8") as f:
+        for i, d in novos.items():
+            f.write(f"{i} {d}\n")
+    return len(novos)
 
 
 GTA = ("gta 6", "gta vi", "gta6", "vice city", "leonida")
@@ -57,7 +97,7 @@ def rodar(canais="canais.txt", processados="processados.txt", max_videos=1, quan
     Twitch/Kick: usa os clipes mais vistos do dia feitos pelos espectadores (momento já validado).
     YouTube: não tem clipes públicos, então cai no corte por pico de áudio da live.
     """
-    feitos = set(_linhas(processados))
+    feitos = set(usados(processados))
     lista = _linhas(canais)
     if not lista:
         raise SystemExit(f"{canais} está vazio — adicione os canais, um por linha.")
@@ -111,14 +151,19 @@ def rodar(canais="canais.txt", processados="processados.txt", max_videos=1, quan
         registrar(vid, metas)
 
 
-def montar_fila(canais="canais.txt", processados="processados.txt", por_canal=6):
-    """Clipes em alta ainda não usados, intercalando os canais (para não postar só um streamer)."""
-    feitos = set(_linhas(processados))
+def montar_fila(canais="canais.txt", processados="processados.txt", por_canal=6, periodo="ambos"):
+    """Clipes em alta ainda não usados, intercalando os canais (para não postar só um streamer).
+
+    `periodo`: "dia" (só as últimas 24h, o conteúdo fresco), "semana" ou "ambos" (dia primeiro).
+    """
+    feitos = set(usados(processados))
     grupos = []
     for c in (c for c in _linhas(canais) if _tem_clipes(c)):
         try:
-            hoje = [x for x in clipes.em_alta(c, "dia") if x["id"] not in feitos]
-            semana = [x for x in clipes.em_alta(c, "semana") if x["id"] not in feitos]
+            hoje = [] if periodo == "semana" else \
+                [x for x in clipes.em_alta(c, "dia") if x["id"] not in feitos]
+            semana = [] if periodo == "dia" else \
+                [x for x in clipes.em_alta(c, "semana") if x["id"] not in feitos]
             vistos = {x["id"] for x in hoje}
             grupos.append((hoje + [x for x in semana if x["id"] not in vistos])[:por_canal])
         except Exception as erro:
@@ -142,4 +187,4 @@ def previa(clipe, trabalho="trabalho"):
 
 def marcar(clipe_id, processados="processados.txt"):
     with open(processados, "a", encoding="utf-8") as f:
-        f.write(clipe_id + "\n")
+        f.write(f"{clipe_id} {date.today().isoformat()}\n")
