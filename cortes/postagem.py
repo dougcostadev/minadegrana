@@ -82,7 +82,7 @@ def agendar(metas, agora=None):
             i += 1
             if i % len(HORARIOS) == 0:
                 dia += timedelta(days=1)
-            if quando >= agora + timedelta(minutes=45):
+            if quando >= agora + timedelta(minutes=15):
                 break
         m["postar_em"] = quando.isoformat()
         m["postar_em_texto"] = f"{DIAS[quando.weekday()]} {quando:%d/%m} às {quando:%H:%M}"
