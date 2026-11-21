@@ -191,7 +191,7 @@ def escrever_html(ordem, caminho):
 <header class="topo">
   <p class="marca">Leonida Clipes</p>
   <h1>Pauta de postagem</h1>
-  <p class="sub">{len(ordem)} cortes de {len(canais)} streamers ({e(", ".join(canais))}). Cada corte traz o texto pronto para YouTube Shorts, TikTok e Instagram Reels. Poste o mesmo corte nas três redes no horário indicado e marque o que já foi.</p>
+  <p class="sub">{len(ordem)} {"corte" if len(ordem) == 1 else "cortes"} de {len(canais)} {"streamer" if len(canais) == 1 else "streamers"} ({e(", ".join(canais))}). Cada corte traz o texto pronto para YouTube Shorts, TikTok e Instagram Reels. Poste o mesmo corte nas três redes no horário indicado e marque o que já foi.</p>
 </header>
 <section class="bloco" aria-labelledby="h-agenda">
   <h2 id="h-agenda">Agenda</h2>
