@@ -40,6 +40,8 @@ def detectar(caminho, amostras=40, presenca_min=0.3):
         return None
 
     _, cx, cy, fw, _ = np.median(np.array(melhor), axis=0)
+    if fw * 3.2 > L * 0.5:
+        return None  # rosto grande demais para ser webcam (close de cutscene)
     # caixa 16:9 em volta do rosto (rosto ocupa ~1/3 da largura de uma webcam típica)
     w = min(L, fw * 3.2)
     h = min(A, w * 9 / 16)

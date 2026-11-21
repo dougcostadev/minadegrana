@@ -124,7 +124,7 @@ def processar(fonte, saida="saida", trabalho="trabalho", quantos=5, duracao=35,
 
     nota = momentos.pontuar(momentos.volume_por_segundo(audio), info.get("heatmap"))
     cortes = momentos.escolher(nota, quantos, duracao, ignorar_inicio=ignorar_inicio)
-    gerados = []
+    gerados, ultima_cam = [], None
     for n, (ini, fim, pontos) in enumerate(cortes, 1):
         if local:
             trecho, ss, to = fonte, ini, fim
@@ -135,7 +135,8 @@ def processar(fonte, saida="saida", trabalho="trabalho", quantos=5, duracao=35,
             else:
                 trecho, ss, to = baixar_trecho(fonte, trabalho, ini, fim), None, None
 
-        caixa = None if sem_cam else (cam or facecam.detectar(trecho))
+        caixa = None if sem_cam else (cam or facecam.detectar(trecho) or ultima_cam)
+        ultima_cam = caixa or ultima_cam  # a webcam não muda de lugar dentro da mesma live
         nome = f"{_slug(info.get('channel'))}-{info['id']}-{n:02d}"
         destino = os.path.join(saida, nome + ".mp4")
 
