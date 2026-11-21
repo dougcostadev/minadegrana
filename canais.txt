@@ -1,0 +1,3 @@
+# Um canal por linha (URL do canal). Só coloque canais que liberam cortes.
+# Exemplo:
+# https://www.youtube.com/@nomedocanal

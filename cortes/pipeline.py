@@ -4,7 +4,7 @@ import os
 import re
 import subprocess
 
-from . import facecam, legendas, momentos, render
+from . import facecam, legendas, momentos, render, yt
 
 GANCHOS = [
     "ELE NÃO ACREDITOU NO QUE ACONTECEU NO GTA 6",
@@ -27,7 +27,7 @@ def _hms(s):
 def baixar_audio(url, pasta):
     """Baixa só o áudio (leve) e devolve (caminho, info) — info traz o heatmap 'mais repetidos'."""
     import yt_dlp
-    opts = {"quiet": True, "format": "ba/b", "outtmpl": os.path.join(pasta, "%(id)s.audio.%(ext)s")}
+    opts = yt.opcoes(format="ba/b", outtmpl=os.path.join(pasta, "%(id)s.audio.%(ext)s"))
     with yt_dlp.YoutubeDL(opts) as ydl:
         info = ydl.extract_info(url, download=True)
         return ydl.prepare_filename(info), info
@@ -38,7 +38,7 @@ def baixar_trecho(url, pasta, inicio, fim, altura=1080):
     import yt_dlp
     from yt_dlp.utils import download_range_func
     opts = {
-        "quiet": True,
+        **yt.opcoes(),
         "format": f"bv*[height<={altura}]+ba/b[height<={altura}]/b",
         "merge_output_format": "mp4",
         "outtmpl": os.path.join(pasta, f"%(id)s.{int(inicio)}.%(ext)s"),

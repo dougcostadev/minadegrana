@@ -24,7 +24,21 @@ def main():
     c.add_argument("--ignorar-inicio", type=int, default=0, help="pula os N primeiros segundos (intro/espera)")
     c.add_argument("--saida", default="saida")
 
+    au = sub.add_parser("auto", help="corta vídeos novos dos canais de canais.txt e publica")
+    au.add_argument("--max-videos", type=int, default=1)
+    au.add_argument("--quantos", type=int, default=3)
+    au.add_argument("--legendas", action="store_true")
+    au.add_argument("--privacidade", default="private", choices=["private", "unlisted", "public"])
+    sub.add_parser("autorizar", help="gera o YT_REFRESH_TOKEN (rodar uma vez, na sua máquina)")
+
     a = p.parse_args()
+    if a.cmd == "auto":
+        from . import auto
+        return auto.rodar(max_videos=a.max_videos, quantos=a.quantos, legendar=a.legendas,
+                          privacidade=a.privacidade)
+    if a.cmd == "autorizar":
+        from . import publicar
+        return publicar.autorizar()
     if a.cmd == "descobrir":
         from . import descobrir
         videos = descobrir.buscar(por_busca=a.por_busca, min_views=a.min_views)

@@ -36,6 +36,25 @@ Opções úteis de `cortar`:
 | `--ignorar-inicio N` | pula os N primeiros segundos (tela de espera da live) |
 | `--legendas` | transcreve e queima legendas estilo shorts |
 
+## Automático (GitHub Actions)
+
+O workflow `.github/workflows/cortes.yml` roda 2x por dia: pega o vídeo de GTA 6
+mais recente ainda não processado dos canais em `canais.txt`, gera 3 cortes com
+legenda e publica no YouTube. Os cortes também ficam como artefato da execução
+por 7 dias. O agendamento só vale depois que o workflow estiver na branch padrão.
+
+Secrets do repositório (Settings → Secrets and variables → Actions):
+
+| secret | de onde vem |
+|---|---|
+| `YT_CLIENT_ID`, `YT_CLIENT_SECRET` | Google Cloud Console → projeto com *YouTube Data API v3* ativada → credencial OAuth do tipo "App para computador" |
+| `YT_REFRESH_TOKEN` | rode `python -m cortes autorizar` na sua máquina (com as duas variáveis acima no ambiente) e faça login com a conta do canal |
+| `YT_COOKIES` | conteúdo de um `cookies.txt` do YouTube — necessário se o YouTube bloquear o download a partir dos servidores do GitHub |
+
+Sem os três primeiros, o workflow só gera os cortes e não publica. Os vídeos
+sobem como **privados** por padrão; para publicar direto, crie a variável de
+repositório `PRIVACIDADE` com o valor `public`.
+
 ## Como funciona
 
 - **Melhores momentos** (`momentos.py`): volume do áudio por segundo — picos e

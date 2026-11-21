@@ -4,6 +4,8 @@ from collections import defaultdict
 
 import yt_dlp
 
+from . import yt
+
 BUSCAS = [
     "GTA 6 gameplay",
     "GTA 6 ao vivo",
@@ -14,7 +16,7 @@ BUSCAS = [
 
 
 def buscar(buscas=BUSCAS, por_busca=40, min_views=10_000):
-    opts = {"quiet": True, "extract_flat": True, "skip_download": True, "ignoreerrors": True}
+    opts = yt.opcoes(extract_flat=True, skip_download=True, ignoreerrors=True)
     videos = {}
     with yt_dlp.YoutubeDL(opts) as ydl:
         for termo in buscas:

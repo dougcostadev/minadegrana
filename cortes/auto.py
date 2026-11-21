@@ -1,0 +1,47 @@
+"""Modo automático: vídeos novos dos canais de canais.txt -> cortes -> (opcional) upload."""
+import os
+
+import yt_dlp
+
+from . import pipeline, publicar, yt
+
+
+def _linhas(caminho):
+    if not os.path.exists(caminho):
+        return []
+    with open(caminho, encoding="utf-8") as f:
+        return [l.strip() for l in f if l.strip() and not l.startswith("#")]
+
+
+def videos_recentes(canal, quantos=5):
+    """IDs dos últimos vídeos e lives encerradas do canal."""
+    ids = []
+    with yt_dlp.YoutubeDL(yt.opcoes(extract_flat=True, playlistend=quantos, ignoreerrors=True)) as ydl:
+        for aba in ("videos", "streams"):
+            info = ydl.extract_info(f"{canal.rstrip('/')}/{aba}", download=False) or {}
+            for e in info.get("entries") or []:
+                titulo = (e or {}).get("title") or ""
+                if e and e.get("id") and e.get("live_status") != "is_live" \
+                        and any(t in titulo.lower() for t in ("gta 6", "gta vi", "gta6")):
+                    ids.append(e["id"])
+    return ids
+
+
+def rodar(canais="canais.txt", processados="processados.txt", max_videos=1, quantos=3,
+          duracao=35, legendar=False, privacidade="private", saida="saida"):
+    feitos = set(_linhas(processados))
+    lista = _linhas(canais)
+    if not lista:
+        raise SystemExit(f"{canais} está vazio — adicione os canais autorizados, um por linha.")
+    fila = [v for c in lista for v in videos_recentes(c) if v not in feitos][:max_videos]
+    print(f"{len(fila)} vídeo(s) novo(s) para cortar")
+    for vid in fila:
+        metas = pipeline.processar(f"https://www.youtube.com/watch?v={vid}", saida, quantos=quantos,
+                                   duracao=duracao, legendar=legendar, ignorar_inicio=120)
+        for m in metas:
+            if publicar.configurado():
+                print("publicado:", publicar.enviar(m, privacidade))
+            else:
+                print("gerado (sem credenciais de upload):", m["arquivo"])
+        with open(processados, "a", encoding="utf-8") as f:
+            f.write(vid + "\n")
