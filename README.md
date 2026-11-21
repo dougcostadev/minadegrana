@@ -36,11 +36,28 @@ Opções úteis de `cortar`:
 | `--ignorar-inicio N` | pula os N primeiros segundos (tela de espera da live) |
 | `--legendas` | transcreve e queima legendas estilo shorts |
 
+## Clipes em alta (Twitch e Kick)
+
+O caminho principal para canais da Twitch e da Kick: em vez de adivinhar o momento pelo
+áudio, pega os **clipes mais vistos feitos pelos espectadores** — momentos que já provaram
+que chamam atenção — e monta o vertical com um **gancho fixo na tela**, na divisória entre
+a cam e o gameplay.
+
+```bash
+python -m cortes clipes https://www.twitch.tv/alanzoka --periodo semana            # só lista
+python -m cortes clipes https://www.twitch.tv/alanzoka --periodo semana --gerar 3  # gera os 3 mais vistos
+```
+
+Com `ANTHROPIC_API_KEY` no ambiente, o Claude vê quadros do clipe e a transcrição, escreve
+um gancho específico ("ELE SÓ FOI CONSERTAR A PIA...") e reprova clipe sem contexto,
+propaganda, sorteio, cena de sexo do jogo e spoiler do final. Sem a chave, o gancho é o
+título que o espectador deu ao clipe, quando ele presta, e um filtro por palavras barra o
+resto.
+
 ## Automático (GitHub Actions)
 
-O workflow `.github/workflows/cortes.yml` roda 2x por dia: pega o vídeo de GTA 6
-mais recente ainda não processado dos canais em `canais.txt`, gera 3 cortes com
-legenda e publica no YouTube. Os cortes também ficam como artefato da execução
+O workflow `.github/workflows/cortes.yml` roda 2x por dia: pega os clipes mais vistos do
+dia nos canais de `canais.txt`, gera até 3 cortes com gancho e publica no YouTube. Os cortes também ficam como artefato da execução
 por 7 dias. O agendamento só vale depois que o workflow estiver na branch padrão.
 
 Secrets do repositório (Settings → Secrets and variables → Actions):
@@ -49,6 +66,7 @@ Secrets do repositório (Settings → Secrets and variables → Actions):
 |---|---|
 | `YT_CLIENT_ID`, `YT_CLIENT_SECRET` | Google Cloud Console → projeto com *YouTube Data API v3* ativada → credencial OAuth do tipo "App para computador" |
 | `YT_REFRESH_TOKEN` | rode `python -m cortes autorizar` na sua máquina (com as duas variáveis acima no ambiente) e faça login com a conta do canal |
+| `ANTHROPIC_API_KEY` | chave da API do Claude (console.anthropic.com) — ganchos escritos por IA e triagem dos clipes |
 | `YT_COOKIES` | conteúdo de um `cookies.txt` do YouTube — necessário se o YouTube bloquear o download a partir dos servidores do GitHub |
 
 Sem os três primeiros, o workflow só gera os cortes e não publica. Os vídeos

@@ -4,7 +4,7 @@ import os
 import re
 import subprocess
 
-from . import facecam, legendas, momentos, render, yt
+from . import facecam, ganchos, legendas, momentos, render, yt
 
 GANCHOS = [
     "ELE NÃO ACREDITOU NO QUE ACONTECEU NO GTA 6",
@@ -65,28 +65,22 @@ def baixar_trecho(url, pasta, inicio, fim, altura=1080):
         return base + ".mp4"
 
 
-def baixar_trecho_hls(info, pasta, inicio, fim, altura=1080):
-    """Para fontes HLS (Twitch, Kick): baixa só os segmentos que cobrem o corte.
-
-    Retorna (arquivo, deslocamento) — o corte começa `deslocamento` segundos dentro do arquivo —
-    ou None se a fonte não for HLS.
-    """
+def _pegar(u):
     import urllib.request
+    req = urllib.request.Request(u, headers={"User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(req, timeout=60) as r:
+        return r.read()
+
+
+def baixar_hls(url, destino_sem_ext, inicio=0.0, fim=float("inf")):
+    """Baixa os segmentos de uma playlist HLS que cobrem [inicio, fim].
+
+    Retorna (arquivo, deslocamento) — o trecho pedido começa `deslocamento` segundos dentro
+    do arquivo — ou None se a playlist não tiver segmentos nesse intervalo.
+    """
     from urllib.parse import urljoin
-    fmts = [f for f in info.get("formats") or []
-            if "m3u8" in (f.get("protocol") or "") and f.get("vcodec") not in (None, "none")
-            and (f.get("height") or 0) <= altura]
-    if not fmts:
-        return None
-    url = max(fmts, key=lambda f: (f.get("height") or 0, f.get("tbr") or 0))["url"]
-
-    def pegar(u):
-        req = urllib.request.Request(u, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=60) as r:
-            return r.read()
-
     t, dur, init, partes, desloc = 0.0, 0.0, None, [], None
-    for linha in pegar(url).decode().splitlines():
+    for linha in _pegar(url).decode().splitlines():
         linha = linha.strip()
         if linha.startswith("#EXT-X-MAP"):
             init = urljoin(url, re.search(r'URI="([^"]+)"', linha).group(1))
@@ -100,11 +94,92 @@ def baixar_trecho_hls(info, pasta, inicio, fim, altura=1080):
             t += dur
     if not partes:
         return None
-    destino = os.path.join(pasta, f"{info['id']}.{int(inicio)}.{'mp4' if init else 'ts'}")
+    destino = f"{destino_sem_ext}.{'mp4' if init else 'ts'}"
     with open(destino, "wb") as f:
         for u in ([init] if init else []) + partes:
-            f.write(pegar(u))
+            f.write(_pegar(u))
     return destino, max(0.0, desloc)
+
+
+def baixar_trecho_hls(info, pasta, inicio, fim, altura=1080):
+    """Para lives em HLS (Twitch, Kick): baixa só o trecho do corte. None se a fonte não for HLS."""
+    fmts = [f for f in info.get("formats") or []
+            if "m3u8" in (f.get("protocol") or "") and f.get("vcodec") not in (None, "none")
+            and (f.get("height") or 0) <= altura]
+    if not fmts:
+        return None
+    url = max(fmts, key=lambda f: (f.get("height") or 0, f.get("tbr") or 0))["url"]
+    return baixar_hls(url, os.path.join(pasta, f"{info['id']}.{int(inicio)}"), inicio, fim)
+
+
+def _duracao(arquivo):
+    r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of",
+                        "csv=p=0", arquivo], capture_output=True, text=True)
+    return float(r.stdout.strip() or 0)
+
+
+def baixar_clipe(clipe, pasta):
+    """Baixa um clipe de espectador. Retorna o arquivo, ou None se não for de GTA 6."""
+    import yt_dlp
+    if clipe["plataforma"] == "kick":
+        r = baixar_hls(clipe["url"], os.path.join(pasta, clipe["id"]))
+        return r[0] if r else None
+    opts = yt.opcoes(format="b[format_id!^=portrait][height<=1080]/b[height<=1080]/b",
+                     outtmpl=os.path.join(pasta, "%(id)s.%(ext)s"))
+    with yt_dlp.YoutubeDL(opts) as ydl:
+        info = ydl.extract_info(clipe["url"], download=False)
+        jogo = " ".join(info.get("categories") or []).lower()
+        if "grand theft auto vi" not in jogo:
+            return None
+        info = ydl.process_ie_result(info, download=True)
+        return ydl.prepare_filename(info)
+
+
+def processar_clipe(clipe, saida="saida", trabalho="trabalho", legendar=False, cam=None):
+    """Clipe de espectador -> vídeo vertical com gancho na tela. Retorna o dict de metadados ou None."""
+    os.makedirs(saida, exist_ok=True)
+    os.makedirs(trabalho, exist_ok=True)
+    canal = clipe["canal"]
+    if any(b in canal.lower() for b in _proibidos()):
+        return None
+    bruto = baixar_clipe(clipe, trabalho)
+    if not bruto:
+        return None
+    # a transcrição alimenta a IA do gancho; só vira legenda na tela se pedido (ela erra
+    # bastante quando a fala do streamer se mistura com o áudio em inglês do jogo)
+    usar_ia = bool(os.environ.get("ANTHROPIC_API_KEY"))
+    palavras = legendas.transcrever(bruto) if (legendar or usar_ia) else None
+    g = ganchos.gerar(canal, clipe["titulo"], legendas.texto(palavras), clipe["views"], bruto)
+    if not legendar:
+        palavras = None
+    if not g["aprovado"]:
+        print(f"reprovado ({g.get('motivo', '')[:120]}): {clipe['titulo']}")
+        return None
+
+    caixa = cam or facecam.detectar(bruto)
+    nome = f"{_slug(canal)}-{_slug(clipe['id'])[-12:]}"
+    destino = os.path.join(saida, nome + ".mp4")
+    vertical = os.path.join(trabalho, nome + ".vertical.mp4")
+    render.renderizar(bruto, vertical, cam=caixa)
+    ass = os.path.join(trabalho, nome + ".ass")
+    # gancho na divisória entre a cam e o gameplay; legenda logo abaixo, sem cobrir o jogo
+    y_gancho, y_legenda = (render.A_CAM - 70, render.A_CAM + 130) if caixa else (150, 330)
+    if legendas.escrever_ass(ass, _duracao(vertical), palavras, y_legenda, g["gancho"], y_gancho):
+        _queimar(vertical, destino, ass)
+    else:
+        os.replace(vertical, destino)
+
+    meta = {
+        "arquivo": destino,
+        "titulo": f"{g['titulo']} 😱 #gta6 #shorts",
+        "descricao": f"Corte de {canal}\nClipe original: {clipe['url'] if clipe['plataforma'] == 'twitch' else 'kick.com/' + canal.lower()}\n\n{TAGS}",
+        "gancho": g["gancho"], "gancho_por_ia": g["ia"],
+        "canal_original": canal, "views_do_clipe": clipe["views"],
+        "titulo_do_clipe": clipe["titulo"], "facecam": caixa,
+    }
+    with open(os.path.join(saida, nome + ".json"), "w", encoding="utf-8") as f:
+        json.dump(meta, f, ensure_ascii=False, indent=2)
+    return meta
 
 
 def processar(fonte, saida="saida", trabalho="trabalho", quantos=5, duracao=35,
@@ -140,14 +215,13 @@ def processar(fonte, saida="saida", trabalho="trabalho", quantos=5, duracao=35,
         nome = f"{_slug(info.get('channel'))}-{info['id']}-{n:02d}"
         destino = os.path.join(saida, nome + ".mp4")
 
-        ass = None
         if legendar:
             # legenda é sincronizada com o trecho já recortado, então renderiza em duas etapas
             bruto = os.path.join(trabalho, nome + ".bruto.mp4")
             render.renderizar(trecho, bruto, ss, to, caixa)
             ass = os.path.join(trabalho, nome + ".ass")
-            y = render.A_CAM + 40 if caixa else 1500
-            if legendas.gerar_ass(bruto, ass, y):
+            y = render.A_CAM - 45 if caixa else 330  # em cima da divisória cam/gameplay
+            if legendas.escrever_ass(ass, _duracao(bruto), legendas.transcrever(bruto), y):
                 _queimar(bruto, destino, ass)
             else:
                 os.replace(bruto, destino)

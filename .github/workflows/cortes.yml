@@ -28,6 +28,7 @@ jobs:
       - run: pip install -q -r requirements.txt faster-whisper
       - name: Cortar e publicar
         env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
           YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
           YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
@@ -36,7 +37,7 @@ jobs:
           PRIVACIDADE: ${{ inputs.privacidade || vars.PRIVACIDADE || 'private' }}
         run: |
           if [ -n "$YT_COOKIES" ]; then printf '%s' "$YT_COOKIES" > "$YT_COOKIES_FILE"; fi
-          python -m cortes auto --legendas --privacidade "$PRIVACIDADE"
+          python -m cortes auto --privacidade "$PRIVACIDADE"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

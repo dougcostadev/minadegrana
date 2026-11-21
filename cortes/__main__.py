@@ -31,6 +31,10 @@ def main():
     au.add_argument("--legendas", action="store_true")
     au.add_argument("--titulos", default="pt", choices=["pt", "en"])
     au.add_argument("--privacidade", default="private", choices=["private", "unlisted", "public"])
+    cl = sub.add_parser("clipes", help="lista os clipes de espectadores em alta de um canal (Twitch/Kick)")
+    cl.add_argument("canal")
+    cl.add_argument("--periodo", default="dia", choices=["dia", "semana"])
+    cl.add_argument("--gerar", type=int, default=0, help="gera os N primeiros como vídeo vertical")
     sub.add_parser("autorizar", help="gera o YT_REFRESH_TOKEN (rodar uma vez, na sua máquina)")
 
     a = p.parse_args()
@@ -38,6 +42,14 @@ def main():
         from . import auto
         return auto.rodar(max_videos=a.max_videos, quantos=a.quantos, legendar=a.legendas,
                           privacidade=a.privacidade, titulos=a.titulos)
+    if a.cmd == "clipes":
+        from . import clipes, pipeline
+        achados = clipes.em_alta(a.canal, a.periodo)
+        for c in achados:
+            print(f"  {c['views']:>8,}  {c['duracao']:>3.0f}s  {c['titulo']}")
+        for c in achados[:a.gerar]:
+            print(json.dumps(pipeline.processar_clipe(c), ensure_ascii=False))
+        return
     if a.cmd == "autorizar":
         from . import publicar
         return publicar.autorizar()
