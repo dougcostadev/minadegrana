@@ -16,7 +16,7 @@ def _twitch(canal, periodo, limite):
     faixa = {"dia": "24hr", "semana": "7d"}[periodo]
     with yt_dlp.YoutubeDL(yt.opcoes(extract_flat=True, playlistend=limite, ignoreerrors=True)) as ydl:
         info = ydl.extract_info(f"https://www.twitch.tv/{login}/clips?range={faixa}", download=False) or {}
-    return [{"plataforma": "twitch", "canal": login, "id": e["id"], "url": e["url"],
+    return [{"plataforma": "twitch", "canal": login, "slug": login, "id": e["id"], "url": e["url"],
              "titulo": e.get("title") or "", "views": e.get("view_count") or 0,
              "duracao": e.get("duration") or 0}
             for e in info.get("entries") or [] if e and e.get("url")]
@@ -29,7 +29,7 @@ def _kick(canal, periodo, limite):
         f"https://kick.com/api/v2/channels/{login}/clips?sort=view&time={faixa}", headers=UA)
     with urllib.request.urlopen(req, timeout=30) as r:
         dados = json.load(r)
-    return [{"plataforma": "kick", "canal": (c.get("channel") or {}).get("username") or login,
+    return [{"plataforma": "kick", "canal": (c.get("channel") or {}).get("username") or login, "slug": login,
              "id": c["id"], "url": c.get("clip_url") or c.get("video_url"),
              "titulo": c.get("title") or "", "views": c.get("views") or 0,
              "duracao": c.get("duration") or 0, "gta": "vi" in ((c.get("category") or {}).get("slug") or "").split("-")}

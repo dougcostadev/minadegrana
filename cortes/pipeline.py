@@ -4,7 +4,7 @@ import os
 import re
 import subprocess
 
-from . import facecam, ganchos, legendas, momentos, render, yt
+from . import facecam, ganchos, legendas, momentos, postagem, render, yt
 
 GANCHOS = [
     "ELE NÃO ACREDITOU NO QUE ACONTECEU NO GTA 6",
@@ -142,7 +142,7 @@ def baixar_clipe(clipe, pasta):
 
 
 def processar_clipe(clipe, saida="saida", trabalho="trabalho", legendar=False, cam=None,
-                    gancho=None, titulo=None):
+                    gancho=None, titulo=None, legenda=None):
     """Clipe de espectador -> vídeo vertical com gancho na tela. Retorna os metadados ou None.
 
     Com `gancho` e `titulo` informados (escritos por quem viu o clipe), não consulta a IA.
@@ -172,24 +172,25 @@ def processar_clipe(clipe, saida="saida", trabalho="trabalho", legendar=False, c
     caixa = cam or facecam.detectar(bruto)
     nome = f"{_slug(canal)}-{_slug(clipe['id'])[-12:]}"
     destino = os.path.join(saida, nome + ".mp4")
-    vertical = os.path.join(trabalho, nome + ".vertical.mp4")
-    render.renderizar(bruto, vertical, cam=caixa)
     ass = os.path.join(trabalho, nome + ".ass")
     # gancho na divisória entre a cam e o gameplay; legenda logo abaixo, sem cobrir o jogo
     y_gancho, y_legenda = (render.A_CAM - 70, render.A_CAM + 130) if caixa else (150, 330)
-    if legendas.escrever_ass(ass, _duracao(vertical), palavras, y_legenda, g["gancho"], y_gancho):
-        _queimar(vertical, destino, ass)
-    else:
-        os.replace(vertical, destino)
+    tem_texto = legendas.escrever_ass(ass, _duracao(bruto), palavras, y_legenda, g["gancho"], y_gancho)
+    render.renderizar(bruto, destino, cam=caixa, legenda_ass=ass if tem_texto else None)
 
+    slug = clipe.get("slug") or canal.lower()
     meta = {
-        "arquivo": destino,
-        "titulo": f"{g['titulo']} 😱 #gta6 #shorts",
-        "descricao": f"Corte de {canal}\nClipe original: {clipe['url'] if clipe['plataforma'] == 'twitch' else 'kick.com/' + canal.lower()}\n\n{TAGS}",
+        "arquivo": destino, "id": clipe["id"], "plataforma": clipe["plataforma"],
+        "canal_original": canal, "titulo_base": g["titulo"], "legenda": legenda or g["titulo"],
         "gancho": g["gancho"], "gancho_por_ia": g["ia"],
-        "canal_original": canal, "views_do_clipe": clipe["views"],
-        "titulo_do_clipe": clipe["titulo"], "facecam": caixa,
+        "link_original": f"https://{'kick.com' if clipe['plataforma'] == 'kick' else 'www.twitch.tv'}/{slug}",
+        "clipe_original": clipe["url"] if clipe["plataforma"] == "twitch" else None,
+        "views_do_clipe": clipe["views"], "titulo_do_clipe": clipe["titulo"],
+        "duracao_s": round(_duracao(destino)), "facecam": caixa,
     }
+    meta["redes"] = postagem.textos(meta)
+    meta["titulo"] = meta["redes"]["youtube"]["titulo"]        # usados pelo upload automático
+    meta["descricao"] = meta["redes"]["youtube"]["descricao"]
     with open(os.path.join(saida, nome + ".json"), "w", encoding="utf-8") as f:
         json.dump(meta, f, ensure_ascii=False, indent=2)
     return meta

@@ -1,11 +1,19 @@
-# Um canal por linha: URL de canal do YouTube, da Twitch ou da Kick.
-# Foco: streamers brasileiros de GTA 6. Nenhum destes tem regra pública sobre cortes
-# (pesquisa de 21/11/2026): se algum pedir remoção, tire o corte e apague a linha dele.
+# Um canal por linha: URL de canal da Twitch, da Kick ou do YouTube.
+# Streamers brasileiros com clipes de GTA 6 em alta (levantamento de 21/11/2026).
+# Nenhum tem regra pública sobre cortes: se algum pedir remoção, tire o corte e apague a linha.
 # Quem proíbe fica em nao_cortar.txt.
 
+# Twitch
 https://www.twitch.tv/alanzoka
+https://www.twitch.tv/calango
+https://www.twitch.tv/tioorochitwitch
+https://www.twitch.tv/rakin
+https://www.twitch.tv/xarola_
+https://www.twitch.tv/hayashii
+
+# Kick
+https://kick.com/paulinholokobr
 https://kick.com/coringa
-https://kick.com/bistecone
 https://kick.com/gabepeixe
-# YouTube só baixa com o secret YT_COOKIES configurado; sem ele estes são pulados.
-https://www.youtube.com/channel/UCdlJx-w37viXFNq__qZ7ARQ
+https://kick.com/bistecone
+https://kick.com/rincon061tv

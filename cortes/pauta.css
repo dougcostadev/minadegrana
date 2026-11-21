@@ -1,0 +1,90 @@
+/* Layout: coluna única de leitura; cada corte é uma ficha com miniatura à esquerda e três
+   blocos de texto (um por rede) prontos para copiar. Paleta do pôr do sol de Leonida. */
+:root {
+  --fundo: #fbf5f6;
+  --papel: #ffffff;
+  --tinta: #2b1830;
+  --suave: #76627c;
+  --linha: #ead9e0;
+  --destaque: #c81e63;
+  --sol: #c9601a;
+  --campo: #f6ecf0;
+  --yt: #c4302b;
+  --tt: #0f7c86;
+  --ig: #a0308f;
+  --ok: #2c7a4b;
+  --display: "Anton", "Arial Narrow", Impact, sans-serif;
+  --texto: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --fundo: #1a0f1f; --papel: #261730; --tinta: #f6eaf1; --suave: #b9a3bf; --linha: #3c2848;
+    --destaque: #ff5c9a; --sol: #ffa257; --campo: #1f1227; --yt: #ff6b63; --tt: #4fd1dc;
+    --ig: #e77bd6; --ok: #6fd39a; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --fundo: #1a0f1f; --papel: #261730; --tinta: #f6eaf1; --suave: #b9a3bf; --linha: #3c2848;
+  --destaque: #ff5c9a; --sol: #ffa257; --campo: #1f1227; --yt: #ff6b63; --tt: #4fd1dc;
+  --ig: #e77bd6; --ok: #6fd39a; color-scheme: dark;
+}
+body { background: var(--fundo); color: var(--tinta); font-family: var(--texto); font-size: 15px; line-height: 1.5; }
+.pagina {
+  max-width: 860px; margin: 0 auto; padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 36px;
+}
+.topo { display: flex; flex-direction: column; gap: 8px; border-bottom: 3px solid var(--destaque); padding-bottom: 20px; }
+.marca { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--sol); }
+h1 { margin: 0; font-family: var(--display); font-weight: 400; font-size: clamp(34px, 8vw, 52px); line-height: 1.02; letter-spacing: .01em; text-transform: uppercase; text-wrap: balance; }
+.sub { margin: 0; max-width: 62ch; color: var(--suave); }
+.bloco { display: flex; flex-direction: column; gap: 16px; }
+h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 24px; letter-spacing: .03em; text-transform: uppercase; }
+.agenda { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; border-top: 1px solid var(--linha); }
+.agenda a {
+  display: grid; grid-template-columns: 9.5em 2.2em minmax(0, 1fr) auto; gap: 10px; align-items: baseline;
+  padding: 9px 2px; border-bottom: 1px solid var(--linha); color: inherit; text-decoration: none;
+}
+.agenda a:hover .oque, .agenda a:focus-visible .oque { color: var(--destaque); }
+.quando { font-variant-numeric: tabular-nums; font-weight: 600; }
+.num { font-family: var(--display); color: var(--sol); font-size: 16px; }
+.oque { font-weight: 600; min-width: 0; }
+.quem { color: var(--suave); font-size: 13px; }
+.corte { background: var(--papel); border: 1px solid var(--linha); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 16px; scroll-margin-top: 16px; }
+.corte + .corte { margin-top: 4px; }
+.cabeca { display: flex; gap: 16px; align-items: flex-start; }
+.mini { width: 108px; height: 192px; object-fit: cover; border-radius: 4px; flex: none; background: var(--campo); }
+.resumo { min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.ordem { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--sol); }
+h3 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 22px; line-height: 1.15; letter-spacing: .02em; text-transform: uppercase; text-wrap: balance; }
+dl { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px 16px; }
+dt { font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--suave); }
+dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.arquivo { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; font-weight: 500; }
+.redes { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+.rede { min-width: 0; display: flex; flex-direction: column; gap: 10px; border-top: 3px solid var(--marca-rede); padding-top: 10px; }
+.rede-yt { --marca-rede: var(--yt); } .rede-tt { --marca-rede: var(--tt); } .rede-ig { --marca-rede: var(--ig); }
+.rede header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+h4 { margin: 0; font-size: 14px; font-weight: 700; color: var(--marca-rede); }
+.feito { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--suave); cursor: pointer; }
+.feito input { width: 17px; height: 17px; accent-color: var(--ok); }
+.rede.pronta { opacity: .55; }
+.campo { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.campo-topo { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.rotulo { font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--suave); }
+.copiar { font: 600 12.5px var(--texto); color: var(--destaque); background: transparent; border: 1px solid currentColor; border-radius: 4px; padding: 4px 10px; cursor: pointer; }
+.copiar:hover { background: var(--destaque); color: var(--papel); }
+.copiar.ok { color: var(--ok); }
+.copiar:focus-visible, .texto:focus-visible, .agenda a:focus-visible, .feito input:focus-visible { outline: 2px solid var(--destaque); outline-offset: 2px; }
+.texto { margin: 0; background: var(--campo); border-radius: 4px; padding: 10px; font: 400 13.5px/1.45 var(--texto); white-space: pre-wrap; overflow-wrap: anywhere; user-select: all; }
+.guia-grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px 28px; }
+.guia h3 { font-size: 18px; color: var(--destaque); }
+.guia ul { margin: 8px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; color: var(--tinta); }
+@media (max-width: 520px) {
+  .agenda a { grid-template-columns: 2em minmax(0, 1fr); row-gap: 2px; }
+  .quando { grid-column: 1 / -1; font-size: 13px; color: var(--suave); }
+  .quem { grid-column: 2; }
+  .mini { width: 84px; height: 149px; }
+}
+@media (prefers-reduced-motion: no-preference) { .copiar { transition: background .12s, color .12s; } }

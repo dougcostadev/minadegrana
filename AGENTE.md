@@ -8,7 +8,7 @@ partir de clipes em alta de streamers brasileiros. Cada rodada produz **até 3 c
 
 ```bash
 git checkout main && git pull -q origin main
-pip install -q -r requirements.txt
+python -m pip install -q -r requirements.txt   # use sempre o mesmo `python` que roda o projeto
 ```
 
 O `ffmpeg` precisa existir. Se algo do código estiver quebrado, faça a correção mínima,
@@ -48,21 +48,31 @@ Escreva para cada um:
   curiosidade sem entregar o desfecho. Sem palavrão, sem emoji. Não invente fatos.
   Exemplos do tom: `ELE SÓ FOI CONSERTAR A PIA...`, `ALAN DIRIGINDO IGUAL EM SÃO PAULO`.
 - **título**: até 70 caracteres, com o nome do streamer e "GTA 6", sem hashtag.
+- **legenda**: 1 ou 2 frases curtas para o texto do post. Conta a situação e termina com uma
+  pergunta que puxe comentário. No máximo 2 emojis, sem hashtag (o código acrescenta), sem
+  palavrão, sem inventar fato.
 
 ```bash
-python -m cortes montar N --gancho "..." --titulo "..." --privacidade "${PRIVACIDADE:-private}"
+python -m cortes montar N --gancho "..." --titulo "..." --legenda "..." --privacidade "${PRIVACIDADE:-private}"
 ```
 
-O comando gera `saida/<nome>.mp4` e `.json`, publica no YouTube se as variáveis
-`YT_CLIENT_ID`, `YT_CLIENT_SECRET` e `YT_REFRESH_TOKEN` existirem, e marca o clipe como usado.
-Confira um quadro do resultado (`ffmpeg -ss 5 -i saida/x.mp4 -frames:v 1 q.png`) para ver se
-o gancho está legível e a cam foi recortada direito.
+O comando gera `saida/<nome>.mp4` e `.json` (com os textos prontos para YouTube, TikTok e
+Instagram), publica no YouTube se as variáveis `YT_CLIENT_ID`, `YT_CLIENT_SECRET` e
+`YT_REFRESH_TOKEN` existirem, e marca o clipe como usado. Confira um quadro do resultado
+(`ffmpeg -ss 5 -i saida/x.mp4 -frames:v 1 q.png`) para ver se o gancho está legível e a cam
+foi recortada direito.
 
 ## 5. Entregar
 
-- Se publicou no YouTube: informe os links.
-- Sempre envie os `.mp4` ao usuário, com o título e a descrição de cada um na legenda do
-  envio, para ele postar no TikTok e no Instagram.
+```bash
+python -m cortes pacote
+```
+
+Gera `saida/POSTAR.md` (e `saida/postar.html`) com a agenda sugerida e, para cada corte, o
+título, a descrição, as tags e as legendas de cada rede.
+
+- Envie ao usuário os `.mp4` e o `saida/POSTAR.md`. Ele posta manualmente nas três redes.
+- Se publicou no YouTube, informe os links.
 
 ## 6. Salvar o estado
 
