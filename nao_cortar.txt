@@ -1,0 +1,4 @@
+# Canais que proíbem cortes publicamente. O pipeline se recusa a processar vídeos deles.
+# Gameplayrj / Davy Jones: "não autoriza o uso de sua imagem, voz, áudio ou cortes sem prévia autorização"
+gameplayrj
+davy jones

@@ -24,6 +24,13 @@ def _hms(s):
     return f"{int(s) // 3600}:{int(s) % 3600 // 60:02d}:{int(s) % 60:02d}"
 
 
+def _proibidos(caminho="nao_cortar.txt"):
+    if not os.path.exists(caminho):
+        return []
+    with open(caminho, encoding="utf-8") as f:
+        return [l.strip().lower() for l in f if l.strip() and not l.startswith("#")]
+
+
 def baixar_audio(url, pasta):
     """Baixa só o áudio (leve) e devolve (caminho, info) — info traz o heatmap 'mais repetidos'."""
     import yt_dlp
@@ -61,6 +68,9 @@ def processar(fonte, saida="saida", trabalho="trabalho", quantos=5, duracao=35,
         audio, info = fonte, {"id": _slug(os.path.splitext(os.path.basename(fonte))[0])}
     else:
         audio, info = baixar_audio(fonte, trabalho)
+        canal = (info.get("channel") or info.get("uploader") or "").lower()
+        if any(b in canal for b in _proibidos()):
+            raise SystemExit(f"'{info.get('channel')}' está em nao_cortar.txt (proíbe cortes) — pulando.")
 
     nota = momentos.pontuar(momentos.volume_por_segundo(audio), info.get("heatmap"))
     cortes = momentos.escolher(nota, quantos, duracao, ignorar_inicio=ignorar_inicio)

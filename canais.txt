@@ -1,3 +1,12 @@
-# Um canal por linha (URL do canal). Só coloque canais que liberam cortes.
-# Exemplo:
-# https://www.youtube.com/@nomedocanal
+# Um canal por linha (URL do canal). Só entram aqui canais com autorização confirmada.
+#
+# Pesquisa de 21/11/2026 — nenhum canal abaixo está ativo; descomente depois de confirmar.
+#
+# Pagam por corte de GTA 6 (campanhas com regulamento; é preciso se inscrever antes de postar):
+#   Kai Cenat, Lacy, Clix, YourRAGE, KreekCraft, Dylan Page, Tomo, AsianJeff
+#   -> inscrição em contentrewards.com (campanhas "GTA 6"); no Brasil, Clipfy League.
+#
+# Maiores lives brasileiras de GTA 6, sem regra pública de cortes encontrada (pedir autorização):
+#   alanzoka, Paulinho o Loko, Coringa, Gabepeixe, Bistecone
+#
+# Proibido: ver nao_cortar.txt
