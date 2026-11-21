@@ -35,6 +35,19 @@ def main():
     cl.add_argument("canal")
     cl.add_argument("--periodo", default="dia", choices=["dia", "semana"])
     cl.add_argument("--gerar", type=int, default=0, help="gera os N primeiros como vídeo vertical")
+    fi = sub.add_parser("fila", help="salva em fila.json os clipes em alta ainda não usados, de todos os canais")
+    fi.add_argument("--saida", default="fila.json")
+    pv = sub.add_parser("previa", help="baixa o clipe N da fila e gera uma folha de quadros para avaliar")
+    pv.add_argument("n", type=int)
+    mo = sub.add_parser("montar", help="gera (e publica, se houver credenciais) o clipe N da fila com o gancho dado")
+    mo.add_argument("n", type=int)
+    mo.add_argument("--gancho", required=True)
+    mo.add_argument("--titulo", required=True)
+    mo.add_argument("--privacidade", default="private", choices=["private", "unlisted", "public"])
+    de = sub.add_parser("descartar", help="marca o clipe N da fila como usado, sem gerar")
+    de.add_argument("n", type=int)
+    for x in (pv, mo, de):
+        x.add_argument("--fila", default="fila.json")
     sub.add_parser("autorizar", help="gera o YT_REFRESH_TOKEN (rodar uma vez, na sua máquina)")
 
     a = p.parse_args()
@@ -49,6 +62,29 @@ def main():
             print(f"  {c['views']:>8,}  {c['duracao']:>3.0f}s  {c['titulo']}")
         for c in achados[:a.gerar]:
             print(json.dumps(pipeline.processar_clipe(c), ensure_ascii=False))
+        return
+    if a.cmd == "fila":
+        from . import auto
+        fila = auto.montar_fila()
+        with open(a.saida, "w", encoding="utf-8") as f:
+            json.dump(fila, f, ensure_ascii=False, indent=1)
+        for n, c in enumerate(fila):
+            print(f"{n:>3}  {c['canal']:<12} {c['views']:>7,}  {c['duracao']:>3.0f}s  {c['titulo']}")
+        return
+    if a.cmd in ("previa", "montar", "descartar"):
+        from . import auto, pipeline, publicar
+        with open(a.fila, encoding="utf-8") as f:
+            clipe = json.load(f)[a.n]
+        if a.cmd == "previa":
+            print(auto.previa(clipe) or "não é GTA 6 (ou não baixou)")
+        elif a.cmd == "descartar":
+            auto.marcar(clipe["id"])
+        else:
+            meta = pipeline.processar_clipe(clipe, gancho=a.gancho, titulo=a.titulo)
+            if meta and publicar.configurado():
+                meta["publicado"] = publicar.enviar(meta, a.privacidade)
+            auto.marcar(clipe["id"])
+            print(json.dumps(meta, ensure_ascii=False))
         return
     if a.cmd == "autorizar":
         from . import publicar

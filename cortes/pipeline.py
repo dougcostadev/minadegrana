@@ -141,8 +141,12 @@ def baixar_clipe(clipe, pasta):
         return ydl.prepare_filename(info)
 
 
-def processar_clipe(clipe, saida="saida", trabalho="trabalho", legendar=False, cam=None):
-    """Clipe de espectador -> vídeo vertical com gancho na tela. Retorna o dict de metadados ou None."""
+def processar_clipe(clipe, saida="saida", trabalho="trabalho", legendar=False, cam=None,
+                    gancho=None, titulo=None):
+    """Clipe de espectador -> vídeo vertical com gancho na tela. Retorna os metadados ou None.
+
+    Com `gancho` e `titulo` informados (escritos por quem viu o clipe), não consulta a IA.
+    """
     os.makedirs(saida, exist_ok=True)
     os.makedirs(trabalho, exist_ok=True)
     canal = clipe["canal"]
@@ -153,9 +157,12 @@ def processar_clipe(clipe, saida="saida", trabalho="trabalho", legendar=False, c
         return None
     # a transcrição alimenta a IA do gancho; só vira legenda na tela se pedido (ela erra
     # bastante quando a fala do streamer se mistura com o áudio em inglês do jogo)
-    usar_ia = bool(os.environ.get("ANTHROPIC_API_KEY"))
+    usar_ia = bool(os.environ.get("ANTHROPIC_API_KEY")) and not gancho
     palavras = legendas.transcrever(bruto, "pt") if (legendar or usar_ia) else None
-    g = ganchos.gerar(canal, clipe["titulo"], legendas.texto(palavras), clipe["views"], bruto)
+    if gancho:
+        g = {"aprovado": True, "gancho": gancho.upper(), "titulo": titulo or gancho.capitalize(), "ia": False}
+    else:
+        g = ganchos.gerar(canal, clipe["titulo"], legendas.texto(palavras), clipe["views"], bruto)
     if not legendar:
         palavras = None
     if not g["aprovado"]:

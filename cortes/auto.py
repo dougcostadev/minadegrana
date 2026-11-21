@@ -109,3 +109,37 @@ def rodar(canais="canais.txt", processados="processados.txt", max_videos=1, quan
             continue
         cortados += 1
         registrar(vid, metas)
+
+
+def montar_fila(canais="canais.txt", processados="processados.txt", por_canal=6):
+    """Clipes em alta ainda não usados, intercalando os canais (para não postar só um streamer)."""
+    feitos = set(_linhas(processados))
+    grupos = []
+    for c in (c for c in _linhas(canais) if _tem_clipes(c)):
+        try:
+            hoje = [x for x in clipes.em_alta(c, "dia") if x["id"] not in feitos]
+            semana = [x for x in clipes.em_alta(c, "semana") if x["id"] not in feitos]
+            vistos = {x["id"] for x in hoje}
+            grupos.append((hoje + [x for x in semana if x["id"] not in vistos])[:por_canal])
+        except Exception as erro:
+            print(f"sem clipes de {c}: {str(erro)[:150]}")
+    return [x for grupo in zip_longest(*grupos) for x in grupo if x]
+
+
+def previa(clipe, trabalho="trabalho"):
+    """Baixa o clipe e monta uma folha de 10 quadros para quem vai escrever o gancho ver o que acontece."""
+    import subprocess
+    os.makedirs(trabalho, exist_ok=True)
+    arquivo = pipeline.baixar_clipe(clipe, trabalho)
+    if not arquivo:
+        return None
+    folha = os.path.join(trabalho, f"previa-{pipeline._slug(clipe['id'])[-12:]}.png")
+    subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", arquivo, "-vf",
+                    f"fps=10/{max(clipe['duracao'], 10)},scale=384:-1,tile=5x2", "-frames:v", "1", folha],
+                   check=True)
+    return folha
+
+
+def marcar(clipe_id, processados="processados.txt"):
+    with open(processados, "a", encoding="utf-8") as f:
+        f.write(clipe_id + "\n")
