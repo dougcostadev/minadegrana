@@ -156,7 +156,7 @@ def processar(fonte, saida="saida", trabalho="trabalho", quantos=5, duracao=35,
         meta = {
             "arquivo": destino,
             "titulo": (GANCHOS_EN if titulos == "en" else GANCHOS)[(n - 1) % len(GANCHOS)].format(
-                c=(info.get("channel") or "").upper()) + " 😱 #gta6 #shorts",
+                c=(info.get("channel") or "").upper()).strip() + " 😱 #gta6 #shorts",
             "descricao": (
                 f"{'Clip from' if titulos == 'en' else 'Corte de'} {info.get('channel') or 'canal original'}\n"
                 f"{'Full stream' if titulos == 'en' else 'Vídeo original'}: {info.get('webpage_url', fonte)}"
