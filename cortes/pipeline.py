@@ -79,8 +79,14 @@ def baixar_hls(url, destino_sem_ext, inicio=0.0, fim=float("inf")):
     do arquivo — ou None se a playlist não tiver segmentos nesse intervalo.
     """
     from urllib.parse import urljoin
+    lista = _pegar(url).decode()
+    if "#EXT-X-STREAM-INF" in lista:  # playlist mestre: segue para a variante de maior qualidade
+        linhas = lista.splitlines()
+        variantes = [(int((re.search(r"BANDWIDTH=(\d+)", l) or [0, 0])[1]), linhas[i + 1].strip())
+                     for i, l in enumerate(linhas[:-1]) if l.startswith("#EXT-X-STREAM-INF")]
+        return baixar_hls(urljoin(url, max(variantes)[1]), destino_sem_ext, inicio, fim)
     t, dur, init, partes, desloc = 0.0, 0.0, None, [], None
-    for linha in _pegar(url).decode().splitlines():
+    for linha in lista.splitlines():
         linha = linha.strip()
         if linha.startswith("#EXT-X-MAP"):
             init = urljoin(url, re.search(r'URI="([^"]+)"', linha).group(1))
@@ -148,7 +154,7 @@ def processar_clipe(clipe, saida="saida", trabalho="trabalho", legendar=False, c
     # a transcrição alimenta a IA do gancho; só vira legenda na tela se pedido (ela erra
     # bastante quando a fala do streamer se mistura com o áudio em inglês do jogo)
     usar_ia = bool(os.environ.get("ANTHROPIC_API_KEY"))
-    palavras = legendas.transcrever(bruto) if (legendar or usar_ia) else None
+    palavras = legendas.transcrever(bruto, "pt") if (legendar or usar_ia) else None
     g = ganchos.gerar(canal, clipe["titulo"], legendas.texto(palavras), clipe["views"], bruto)
     if not legendar:
         palavras = None
