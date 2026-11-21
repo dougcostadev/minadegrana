@@ -82,7 +82,8 @@ def main():
         with open(a.saida, "w", encoding="utf-8") as f:
             json.dump(fila, f, ensure_ascii=False, indent=1)
         for n, c in enumerate(fila):
-            print(f"{n:>3}  {c['canal']:<12} {c['views']:>7,}  {c['duracao']:>3.0f}s  {c['titulo']}")
+            print(f"{n:>3}  {'hoje' if c.get('fresco') else '    '}  {c['canal']:<16} {c['views']:>7,}  "
+                  f"{c['duracao']:>3.0f}s  {c['titulo']}")
         return
     if a.cmd in ("previa", "montar", "descartar"):
         from . import auto, pipeline, publicar

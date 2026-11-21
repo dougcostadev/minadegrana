@@ -151,24 +151,34 @@ def rodar(canais="canais.txt", processados="processados.txt", max_videos=1, quan
         registrar(vid, metas)
 
 
-def montar_fila(canais="canais.txt", processados="processados.txt", por_canal=6, periodo="ambos"):
-    """Clipes em alta ainda não usados, intercalando os canais (para não postar só um streamer).
+def montar_fila(canais="canais.txt", processados="processados.txt", por_canal=4, periodo="ambos",
+                total=40):
+    """Clipes em alta ainda não usados, intercalando os streamers (para não postar só um).
 
     `periodo`: "dia" (só as últimas 24h, o conteúdo fresco), "semana" ou "ambos" (dia primeiro).
     """
     feitos = set(usados(processados))
-    grupos = []
+    proibidos = pipeline._proibidos()
+    periodos = ("dia",) if periodo == "dia" else ("semana",) if periodo == "semana" else ("dia", "semana")
+    grupos = {}
     for c in (c for c in _linhas(canais) if _tem_clipes(c)):
-        try:
-            hoje = [] if periodo == "semana" else \
-                [x for x in clipes.em_alta(c, "dia") if x["id"] not in feitos]
-            semana = [] if periodo == "dia" else \
-                [x for x in clipes.em_alta(c, "semana") if x["id"] not in feitos]
-            vistos = {x["id"] for x in hoje}
-            grupos.append((hoje + [x for x in semana if x["id"] not in vistos])[:por_canal])
-        except Exception as erro:
-            print(f"sem clipes de {c}: {str(erro)[:150]}")
-    return [x for grupo in zip_longest(*grupos) for x in grupo if x]
+        dono = c.rstrip("/").split("/")[-1].lower()
+        if any(b in dono for b in proibidos):
+            continue
+        achados = {}
+        for per in periodos:
+            try:
+                # clipe de hoje ainda teve pouco tempo para juntar views: o corte é bem mais baixo
+                for x in clipes.em_alta(c, per, min_views=80 if per == "dia" else 500):
+                    x["fresco"] = per == "dia"
+                    achados.setdefault(x["id"], x)
+            except Exception as erro:
+                print(f"sem clipes de {c} ({per}): {str(erro)[:150]}")
+        novos = [x for x in achados.values() if x["id"] not in feitos]
+        if novos:
+            grupos[dono] = sorted(novos, key=lambda x: (not x["fresco"], -x["views"]))[:por_canal]
+    filas = sorted(grupos.values(), key=lambda g: (not g[0]["fresco"], -g[0]["views"]))
+    return [x for grupo in zip_longest(*filas) for x in grupo if x][:total]
 
 
 def previa(clipe, trabalho="trabalho"):
