@@ -1,6 +1,6 @@
 # Um canal por linha (URL do canal). Só entram aqui canais com autorização confirmada.
 #
-# Pesquisa de 21/11/2026 — nenhum canal abaixo está ativo; descomente depois de confirmar.
+# Pesquisa de 21/11/2026. Aceita URL de canal do YouTube ou da Twitch.
 #
 # Pagam por corte de GTA 6 (campanhas com regulamento; é preciso se inscrever antes de postar):
 #   Kai Cenat, Lacy, Clix, YourRAGE, KreekCraft, Dylan Page, Tomo, AsianJeff
@@ -10,3 +10,7 @@
 #   alanzoka, Paulinho o Loko, Coringa, Gabepeixe, Bistecone
 #
 # Proibido: ver nao_cortar.txt
+
+# Kai Cenat — campanha "$10,000 GTA 6 Pool" (Clipped & Shipped, via contentrewards.com).
+# Para receber é preciso estar inscrito na campanha.
+https://www.twitch.tv/kaicenat

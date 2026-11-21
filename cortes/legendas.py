@@ -1,4 +1,7 @@
 """Legendas automáticas (opcional): transcreve com faster-whisper e gera .ass estilo shorts."""
+import subprocess
+
+import numpy as np
 
 
 def _t(s):
@@ -7,20 +10,28 @@ def _t(s):
     return f"{int(h)}:{int(m):02d}:{s:05.2f}"
 
 
-def gerar_ass(video, destino, y_px, idioma="pt", modelo="small", palavras_por_bloco=3):
-    """Cria o .ass com blocos curtos de palavras. Retorna False se o whisper não estiver instalado."""
+def gerar_ass(video, destino, y_px, idioma=None, modelo="small", palavras_por_bloco=3):
+    """Cria o .ass com blocos curtos de palavras (idioma detectado sozinho se não informado).
+
+    Retorna False se o whisper não estiver instalado ou se não houver fala.
+    """
     try:
         from faster_whisper import WhisperModel
     except ImportError:
         return False
+    # decodifica com o ffmpeg (evita depender da versão do PyAV que o faster-whisper usa)
+    bruto = subprocess.run(["ffmpeg", "-v", "error", "-i", video, "-vn", "-ac", "1", "-ar", "16000",
+                            "-f", "f32le", "-"], capture_output=True, check=True).stdout
+    audio = np.frombuffer(bruto, dtype=np.float32)
     segmentos, _ = WhisperModel(modelo, compute_type="int8").transcribe(
-        video, language=idioma, word_timestamps=True)
+        audio, language=idioma, word_timestamps=True, vad_filter=True)
     palavras = [p for s in segmentos for p in (s.words or [])]
     linhas = []
     for i in range(0, len(palavras), palavras_por_bloco):
         bloco = palavras[i:i + palavras_por_bloco]
         texto = "".join(p.word for p in bloco).strip().upper().replace("{", "").replace("}", "")
-        linhas.append(f"Dialogue: 0,{_t(bloco[0].start)},{_t(bloco[-1].end)},P,,0,0,0,,{texto}")
+        fim = min(bloco[-1].end, bloco[0].start + 2.0)  # não deixa legenda parada na tela
+        linhas.append(f"Dialogue: 0,{_t(bloco[0].start)},{_t(fim)},P,,0,0,0,,{texto}")
     cabecalho = f"""[Script Info]
 ScriptType: v4.00+
 PlayResX: 1080

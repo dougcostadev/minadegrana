@@ -3,7 +3,7 @@ import os
 
 
 def opcoes(**extra):
-    opts = {"quiet": True, "ignoreerrors": False}
+    opts = {"quiet": True, "ignoreerrors": False, "concurrent_fragment_downloads": 8}
     cookies = os.environ.get("YT_COOKIES_FILE")
     if cookies and os.path.exists(cookies):
         opts["cookiefile"] = cookies

@@ -14,16 +14,20 @@ def _linhas(caminho):
 
 
 def videos_recentes(canal, quantos=5):
-    """IDs dos últimos vídeos e lives encerradas do canal."""
+    """URLs dos últimos vídeos e lives encerradas de GTA 6 do canal (YouTube ou Twitch)."""
     ids = []
     with yt_dlp.YoutubeDL(yt.opcoes(extract_flat=True, playlistend=quantos, ignoreerrors=True)) as ydl:
-        for aba in ("videos", "streams"):
-            info = ydl.extract_info(f"{canal.rstrip('/')}/{aba}", download=False) or {}
+        if "twitch.tv" in canal:
+            paginas = [f"{canal.rstrip('/')}/videos?filter=archives&sort=time"]
+        else:
+            paginas = [f"{canal.rstrip('/')}/{aba}" for aba in ("videos", "streams")]
+        for pagina in paginas:
+            info = ydl.extract_info(pagina, download=False) or {}
             for e in info.get("entries") or []:
                 titulo = (e or {}).get("title") or ""
                 if e and e.get("id") and e.get("live_status") != "is_live" \
                         and any(t in titulo.lower() for t in ("gta 6", "gta vi", "gta6")):
-                    ids.append(e["id"])
+                    ids.append(e.get("url") or f"https://www.youtube.com/watch?v={e['id']}")
     return ids
 
 
@@ -36,7 +40,7 @@ def rodar(canais="canais.txt", processados="processados.txt", max_videos=1, quan
     fila = [v for c in lista for v in videos_recentes(c) if v not in feitos][:max_videos]
     print(f"{len(fila)} vídeo(s) novo(s) para cortar")
     for vid in fila:
-        metas = pipeline.processar(f"https://www.youtube.com/watch?v={vid}", saida, quantos=quantos,
+        metas = pipeline.processar(vid, saida, quantos=quantos,
                                    duracao=duracao, legendar=legendar, ignorar_inicio=120)
         for m in metas:
             if publicar.configurado():

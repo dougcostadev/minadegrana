@@ -58,6 +58,48 @@ def baixar_trecho(url, pasta, inicio, fim, altura=1080):
         return base + ".mp4"
 
 
+def baixar_trecho_hls(info, pasta, inicio, fim, altura=1080):
+    """Para fontes HLS (Twitch, Kick): baixa só os segmentos que cobrem o corte.
+
+    Retorna (arquivo, deslocamento) — o corte começa `deslocamento` segundos dentro do arquivo —
+    ou None se a fonte não for HLS.
+    """
+    import urllib.request
+    from urllib.parse import urljoin
+    fmts = [f for f in info.get("formats") or []
+            if "m3u8" in (f.get("protocol") or "") and f.get("vcodec") not in (None, "none")
+            and (f.get("height") or 0) <= altura]
+    if not fmts:
+        return None
+    url = max(fmts, key=lambda f: (f.get("height") or 0, f.get("tbr") or 0))["url"]
+
+    def pegar(u):
+        req = urllib.request.Request(u, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=60) as r:
+            return r.read()
+
+    t, dur, init, partes, desloc = 0.0, 0.0, None, [], None
+    for linha in pegar(url).decode().splitlines():
+        linha = linha.strip()
+        if linha.startswith("#EXT-X-MAP"):
+            init = urljoin(url, re.search(r'URI="([^"]+)"', linha).group(1))
+        elif linha.startswith("#EXTINF:"):
+            dur = float(linha[8:].split(",")[0])
+        elif linha and not linha.startswith("#"):
+            if t + dur > inicio and t < fim:
+                if desloc is None:
+                    desloc = inicio - t
+                partes.append(urljoin(url, linha))
+            t += dur
+    if not partes:
+        return None
+    destino = os.path.join(pasta, f"{info['id']}.{int(inicio)}.{'mp4' if init else 'ts'}")
+    with open(destino, "wb") as f:
+        for u in ([init] if init else []) + partes:
+            f.write(pegar(u))
+    return destino, max(0.0, desloc)
+
+
 def processar(fonte, saida="saida", trabalho="trabalho", quantos=5, duracao=35,
               cam=None, sem_cam=False, legendar=False, ignorar_inicio=0):
     """`fonte` é uma URL do YouTube ou um arquivo local. Retorna a lista de cortes gerados."""
@@ -68,7 +110,8 @@ def processar(fonte, saida="saida", trabalho="trabalho", quantos=5, duracao=35,
         audio, info = fonte, {"id": _slug(os.path.splitext(os.path.basename(fonte))[0])}
     else:
         audio, info = baixar_audio(fonte, trabalho)
-        canal = (info.get("channel") or info.get("uploader") or "").lower()
+        info["channel"] = info.get("channel") or info.get("uploader")
+        canal = (info["channel"] or "").lower()
         if any(b in canal for b in _proibidos()):
             raise SystemExit(f"'{info.get('channel')}' está em nao_cortar.txt (proíbe cortes) — pulando.")
 
@@ -79,7 +122,11 @@ def processar(fonte, saida="saida", trabalho="trabalho", quantos=5, duracao=35,
         if local:
             trecho, ss, to = fonte, ini, fim
         else:
-            trecho, ss, to = baixar_trecho(fonte, trabalho, ini, fim), None, None
+            hls = baixar_trecho_hls(info, trabalho, ini, fim)
+            if hls:
+                trecho, ss, to = hls[0], hls[1], hls[1] + (fim - ini)
+            else:
+                trecho, ss, to = baixar_trecho(fonte, trabalho, ini, fim), None, None
 
         caixa = None if sem_cam else (cam or facecam.detectar(trecho))
         nome = f"{_slug(info.get('channel'))}-{info['id']}-{n:02d}"
@@ -105,7 +152,8 @@ def processar(fonte, saida="saida", trabalho="trabalho", quantos=5, duracao=35,
             "descricao": (
                 f"Corte de {info.get('channel') or 'canal original'}\n"
                 f"Vídeo original: {info.get('webpage_url', fonte)}"
-                + (f"&t={int(ini)}s" if not local else "") + f" ({_hms(ini)})\n\n{TAGS}"
+                + ("" if local else f"{'&' if '?' in info.get('webpage_url', fonte) else '?'}t={int(ini)}s")
+                + f" ({_hms(ini)})\n\n{TAGS}"
             ),
             "canal_original": info.get("channel"),
             "inicio_s": ini, "fim_s": fim, "nota": round(pontos, 2),
