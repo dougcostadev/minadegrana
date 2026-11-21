@@ -23,11 +23,13 @@ def main():
     c.add_argument("--legendas", action="store_true", help="queima legendas (requer faster-whisper)")
     c.add_argument("--ignorar-inicio", type=int, default=0, help="pula os N primeiros segundos (intro/espera)")
     c.add_argument("--saida", default="saida")
+    c.add_argument("--titulos", default="pt", choices=["pt", "en"], help="idioma dos títulos")
 
     au = sub.add_parser("auto", help="corta vídeos novos dos canais de canais.txt e publica")
     au.add_argument("--max-videos", type=int, default=1)
     au.add_argument("--quantos", type=int, default=3)
     au.add_argument("--legendas", action="store_true")
+    au.add_argument("--titulos", default="en", choices=["pt", "en"])
     au.add_argument("--privacidade", default="private", choices=["private", "unlisted", "public"])
     sub.add_parser("autorizar", help="gera o YT_REFRESH_TOKEN (rodar uma vez, na sua máquina)")
 
@@ -35,7 +37,7 @@ def main():
     if a.cmd == "auto":
         from . import auto
         return auto.rodar(max_videos=a.max_videos, quantos=a.quantos, legendar=a.legendas,
-                          privacidade=a.privacidade)
+                          privacidade=a.privacidade, titulos=a.titulos)
     if a.cmd == "autorizar":
         from . import publicar
         return publicar.autorizar()
@@ -57,7 +59,7 @@ def main():
         for fonte in a.fonte:
             for m in pipeline.processar(fonte, a.saida, quantos=a.quantos, duracao=a.duracao, cam=a.cam,
                                         sem_cam=a.sem_cam, legendar=a.legendas,
-                                        ignorar_inicio=a.ignorar_inicio):
+                                        ignorar_inicio=a.ignorar_inicio, titulos=a.titulos):
                 print(json.dumps(m, ensure_ascii=False))
 
 

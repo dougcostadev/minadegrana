@@ -32,7 +32,7 @@ def videos_recentes(canal, quantos=5):
 
 
 def rodar(canais="canais.txt", processados="processados.txt", max_videos=1, quantos=3,
-          duracao=35, legendar=False, privacidade="private", saida="saida"):
+          duracao=35, legendar=False, privacidade="private", saida="saida", titulos="pt"):
     feitos = set(_linhas(processados))
     lista = _linhas(canais)
     if not lista:
@@ -41,7 +41,8 @@ def rodar(canais="canais.txt", processados="processados.txt", max_videos=1, quan
     print(f"{len(fila)} vídeo(s) novo(s) para cortar")
     for vid in fila:
         metas = pipeline.processar(vid, saida, quantos=quantos,
-                                   duracao=duracao, legendar=legendar, ignorar_inicio=120)
+                                   duracao=duracao, legendar=legendar, ignorar_inicio=900,
+                                   titulos=titulos)
         for m in metas:
             if publicar.configurado():
                 print("publicado:", publicar.enviar(m, privacidade))

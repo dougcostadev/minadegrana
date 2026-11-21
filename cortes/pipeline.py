@@ -13,6 +13,13 @@ GANCHOS = [
     "A REAÇÃO DELE NO GTA 6 FOI IMPAGÁVEL",
     "GTA 6 PASSOU DOS LIMITES AQUI",
 ]
+GANCHOS_EN = [
+    "{c} CAN'T BELIEVE WHAT JUST HAPPENED IN GTA 6",
+    "{c}'S WILDEST GTA 6 MOMENT SO FAR",
+    "THIS ONLY HAPPENS IN GTA 6 ({c})",
+    "{c}'S REACTION TO THIS GTA 6 SCENE",
+    "GTA 6 WENT TOO FAR HERE ({c})",
+]
 TAGS = "#gta6 #gtavi #gta #gameplay #cortes #shorts"
 
 
@@ -101,7 +108,7 @@ def baixar_trecho_hls(info, pasta, inicio, fim, altura=1080):
 
 
 def processar(fonte, saida="saida", trabalho="trabalho", quantos=5, duracao=35,
-              cam=None, sem_cam=False, legendar=False, ignorar_inicio=0):
+              cam=None, sem_cam=False, legendar=False, ignorar_inicio=0, titulos="pt"):
     """`fonte` é uma URL do YouTube ou um arquivo local. Retorna a lista de cortes gerados."""
     os.makedirs(saida, exist_ok=True)
     os.makedirs(trabalho, exist_ok=True)
@@ -148,10 +155,11 @@ def processar(fonte, saida="saida", trabalho="trabalho", quantos=5, duracao=35,
 
         meta = {
             "arquivo": destino,
-            "titulo": f"{GANCHOS[(n - 1) % len(GANCHOS)]} 😱 #gta6 #shorts",
+            "titulo": (GANCHOS_EN if titulos == "en" else GANCHOS)[(n - 1) % len(GANCHOS)].format(
+                c=(info.get("channel") or "").upper()) + " 😱 #gta6 #shorts",
             "descricao": (
-                f"Corte de {info.get('channel') or 'canal original'}\n"
-                f"Vídeo original: {info.get('webpage_url', fonte)}"
+                f"{'Clip from' if titulos == 'en' else 'Corte de'} {info.get('channel') or 'canal original'}\n"
+                f"{'Full stream' if titulos == 'en' else 'Vídeo original'}: {info.get('webpage_url', fonte)}"
                 + ("" if local else f"{'&' if '?' in info.get('webpage_url', fonte) else '?'}t={int(ini)}s")
                 + f" ({_hms(ini)})\n\n{TAGS}"
             ),
