@@ -81,13 +81,17 @@ saiu errada, apague o `.mp4` e o `.json` desse corte de `saida/` e siga com os o
 
 ## 6. Fechar o lote do dia
 
+Primeiro traga os cortes que já estão na pauta, para não repetir horário:
+`ArtifactData` com `action: "list"`, `url: PAUTA`, `collection: "cortes"`,
+`out_dir: "<caminho absoluto>/trabalho/db"`. Depois:
+
 ```bash
-python -m cortes pacote --rodada
+python -m cortes pacote --rodada --ocupados trabalho/db/cortes
 ```
 
-Dá a cada corte um horário de hoje (o primeiro no próximo horário fixo, 12h00, 18h30 ou 21h00;
-os demais de hora em hora) e grava em `saida/postar/` os vídeos numerados (`NN-*.mp4`) e as
-capas (`NN-*.jpg`).
+Dá a cada corte o próximo horário livre de hoje (12h00, 18h30 ou 21h00 e as duas horas
+seguintes a cada um) e grava em `saida/postar/` os vídeos numerados (`NN-*.mp4`) e as capas
+(`NN-*.jpg`). Cortes desta pasta que já foram para a pauta ficam de fora automaticamente.
 
 ## 7. Colocar na pauta
 

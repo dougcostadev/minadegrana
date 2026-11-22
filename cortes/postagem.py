@@ -50,21 +50,38 @@ def textos(m):
     }
 
 
-def carregar(saida="saida"):
+def carregar(saida="saida", incluir_publicados=False):
     metas = []
     for caminho in sorted(glob.glob(os.path.join(saida, "*.json"))):
         with open(caminho, encoding="utf-8") as f:
             m = json.load(f)
         if not isinstance(m, dict):  # agenda.json e lote.json também moram em saida/
             continue
+        if m.get("na_pauta") and not incluir_publicados:
+            continue
         if os.path.exists(m.get("arquivo", "")) and m.get("canal_original"):
+            m["_json"] = caminho
             m["redes"] = textos(m)
             m["nome"] = nome(m["canal_original"])
             metas.append(m)
     return metas
 
 
-def agendar(metas, agora=None, rodada=False):
+def horarios_ocupados(pasta):
+    """Horários (ISO) dos cortes que já estão na pauta, lidos de uma pasta com os documentos JSON."""
+    ocupados = set()
+    for caminho in glob.glob(os.path.join(pasta, "*.json")):
+        try:
+            with open(caminho, encoding="utf-8") as f:
+                quando = json.load(f).get("postar_em")
+            if quando:
+                ocupados.add(datetime.fromisoformat(quando).astimezone(FUSO).replace(second=0, microsecond=0))
+        except (ValueError, OSError, AttributeError):
+            continue
+    return ocupados
+
+
+def agendar(metas, agora=None, rodada=False, ocupados=()):
     """Ordena intercalando os streamers (os mais vistos primeiro) e dá um horário a cada corte.
 
     Padrão: um corte por horário fixo (12h00, 18h30, 21h00), dia após dia.
@@ -82,16 +99,17 @@ def agendar(metas, agora=None, rodada=False):
             if f:
                 ordem.append(f.pop(0))
     if rodada:
-        base = None
-        for d in range(3):
+        # grade do dia: cada horário fixo e as duas horas seguintes (12h, 13h, 14h, 18h30, ...)
+        grade = []
+        for d in range(4):
             for h in HORARIOS:
                 hh, mi = map(int, h.split(":"))
-                q = datetime.combine(agora.date() + timedelta(days=d), datetime.min.time(), FUSO) \
+                base = datetime.combine(agora.date() + timedelta(days=d), datetime.min.time(), FUSO) \
                     .replace(hour=hh, minute=mi)
-                if base is None and q >= agora + timedelta(minutes=15):
-                    base = q
-        for k, m in enumerate(ordem):
-            quando = base + timedelta(hours=k)
+                grade += [base + timedelta(hours=k) for k in range(3)]
+        livres = [q for q in sorted(set(grade))
+                  if q >= agora + timedelta(minutes=15) and q not in set(ocupados)]
+        for m, quando in zip(ordem, livres):
             m["postar_em"] = quando.isoformat()
             m["postar_em_texto"] = f"{DIAS[quando.weekday()]} {quando:%d/%m} às {quando:%H:%M}"
         return ordem
@@ -229,19 +247,28 @@ def linhas(saida="saida", mapa_assets=None):
         writes.append({"op": "set", "collection": "cortes", "doc_id": _doc_id(m), "file_path": caminho})
     with open(os.path.join(saida, "lote.json"), "w", encoding="utf-8") as f:
         json.dump(writes, f, ensure_ascii=False, indent=1)
+    if mapa_assets:  # marca os cortes como já enviados: o próximo `pacote` desta pasta não os repete
+        for m in ordem:
+            origem = m.get("_json")
+            if origem and os.path.exists(origem):
+                with open(origem, encoding="utf-8") as f:
+                    meta = json.load(f)
+                meta["na_pauta"] = True
+                with open(origem, "w", encoding="utf-8") as f:
+                    json.dump(meta, f, ensure_ascii=False, indent=2)
     return writes, faltando
 
 
-def pacote(saida="saida", rodada=False, agora=None):
+def pacote(saida="saida", rodada=False, agora=None, ocupados=(), todos=False):
     """Fecha o lote: agenda, vídeos numerados em saida/postar/, POSTAR.md e agenda.json.
 
     Depois de subir os vídeos como anexos da pauta, `linhas()` gera os documentos do banco.
     """
-    metas = carregar(saida)
+    metas = carregar(saida, incluir_publicados=todos)
     from . import render
     for m in metas:  # garante que todo vídeo cabe como anexo da pauta
         render.compactar(m["arquivo"])
-    ordem = agendar(metas, agora, rodada)
+    ordem = agendar(metas, agora, rodada, ocupados)
     if not ordem:
         return []
     # cópias numeradas na ordem de postagem, para não haver dúvida de qual vídeo é qual
