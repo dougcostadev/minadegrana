@@ -103,13 +103,19 @@ legenda, acrescentando uma das opções (com 1 segundo de folga antes e depois d
 - `--tarja "12-19:0.30,0.40,0.40,0.30"`: tarja preta só numa região, em frações do painel do jogo
   (x, y, largura, altura). Use apenas em plano parado; separe várias com `;`.
 
+A censura cobre só o painel do jogo. O painel de cima é um recorte fixo do vídeo original:
+se o streamer mexer na webcam ou a cam estiver mal detectada, pode aparecer jogo ali, sem
+censura. Por isso confira **os dois painéis**.
+
 Extraia de novo um quadro por segundo e confira **todos** os quadros dos trechos e das bordas
 deles: se sobrar qualquer nudez visível, aumente o trecho ou troque a tarja por `--censurar`.
 Se não conseguir cobrir tudo, apague o `.mp4` e o `.json` desse corte e descarte o clipe.
 
 Confira um quadro do resultado (`ffmpeg -y -v error -ss 5 -i saida/x.mp4 -frames:v 1 -vf scale=360:-1 q.png`):
 o gancho precisa estar legível e a parte de cima deve mostrar o rosto do streamer. Se a cam
-saiu errada, apague o `.mp4` e o `.json` desse corte de `saida/` e siga com os outros.
+saiu errada, monte de novo informando a posição dela no vídeo original com `--cam x:y:w:h`
+(meça num quadro do arquivo em `trabalho/`). Se nem assim ficar boa, apague o `.mp4` e o
+`.json` desse corte de `saida/` e siga com os outros.
 
 ## 6. Fechar o lote do dia
 

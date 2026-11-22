@@ -47,6 +47,8 @@ def main():
     mo.add_argument("--gancho", required=True)
     mo.add_argument("--titulo", required=True)
     mo.add_argument("--legenda", help="1 ou 2 frases para a legenda do post, terminando com uma pergunta")
+    mo.add_argument("--cam", type=facecam.interpretar,
+                    help="posição da facecam no vídeo original, x:y:w:h, quando a detecção errar")
     mo.add_argument("--censurar", help='trechos em segundos em que o painel do jogo fica pixelizado: "12-19,24-30"')
     mo.add_argument("--tarja", help='tarjas pretas: "inicio-fim:x,y,w,h" (frações do painel do jogo), separadas por ";"')
     mo.add_argument("--privacidade", default="private", choices=["private", "unlisted", "public"])
@@ -108,7 +110,7 @@ def main():
                     tempo, caixa = item.split(":")
                     tarjas.append(tuple(float(v) for v in tempo.split("-")) + tuple(float(v) for v in caixa.split(",")))
             meta = pipeline.processar_clipe(clipe, gancho=a.gancho, titulo=a.titulo, legenda=a.legenda,
-                                            censura=censura, tarjas=tarjas)
+                                            censura=censura, tarjas=tarjas, cam=a.cam)
             if meta and publicar.configurado():
                 meta["publicado"] = publicar.enviar(meta, a.privacidade)
             auto.marcar(clipe["id"])
