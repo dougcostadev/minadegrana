@@ -13,6 +13,9 @@ from zoneinfo import ZoneInfo
 FUSO = ZoneInfo("America/Sao_Paulo")
 # Almoço e noite: as faixas em que os guias de horário para o Brasil mais concordam.
 HORARIOS = ["12:00", "18:30", "21:00"]
+# Horários que a produção do dia pode ocupar, além dos fixos acima.
+GRADE = ["12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:30", "19:30", "20:30", "21:00",
+         "22:00", "23:00"]
 DIAS = ["seg", "ter", "qua", "qui", "sex", "sáb", "dom"]
 
 
@@ -105,14 +108,13 @@ def agendar(metas, agora=None, rodada=False, ocupados=(), horarios=None):
             m["postar_em_texto"] = f"{DIAS[quando.weekday()]} {quando:%d/%m} às {quando:%H:%M}"
         return ordem[:len(horarios)]
     if rodada:
-        # grade do dia: cada horário fixo e as duas horas seguintes (12h, 13h, 14h, 18h30, ...)
+        # grade do dia: do almoço até o fim da noite, para um corte feito de manhã sair à tarde
         grade = []
         for d in range(4):
-            for h in HORARIOS:
+            for h in GRADE:
                 hh, mi = map(int, h.split(":"))
-                base = datetime.combine(agora.date() + timedelta(days=d), datetime.min.time(), FUSO) \
-                    .replace(hour=hh, minute=mi)
-                grade += [base + timedelta(hours=k) for k in range(3)]
+                grade.append(datetime.combine(agora.date() + timedelta(days=d), datetime.min.time(), FUSO)
+                             .replace(hour=hh, minute=mi))
         livres = [q for q in sorted(set(grade))
                   if q >= agora + timedelta(minutes=15) and q not in set(ocupados)]
         for m, quando in zip(ordem, livres):

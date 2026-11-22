@@ -9,9 +9,11 @@ YouTube Shorts, TikTok e Instagram Reels, guiado pela **pauta**:
 A pauta é uma página que lê tudo do banco de dados dela mesma. Sua rodada termina quando os
 cortes novos estão lá dentro, com o vídeo anexado e os textos de cada rede.
 
-**Objetivo de cada rodada:** até 2 cortes com o que viralizou **nas últimas 24 horas**, de
-streamers diferentes, para postar **hoje**. Conteúdo velho só entra se o dia não rendeu nada.
-Trabalhe sozinho até o fim; não pergunte nada.
+**Objetivo de cada rodada:** fechar **2 cortes** para postar **hoje**, de preferência com o que
+viralizou nas últimas 24 horas e de streamers diferentes. As duas preferências cedem quando
+faltar material: se só um streamer tiver clipes bons, saem dois cortes dele; se o dia render
+menos de 2, complete com clipes da semana. Só entregue menos de 2 se nem assim houver clipe
+que preste. Trabalhe sozinho até o fim; não pergunte nada.
 
 ## 1. Preparar
 
@@ -39,9 +41,11 @@ python -m cortes fila --periodo dia
 ```
 
 Lista os clipes das últimas 24h ainda não usados, intercalando os canais de `canais.txt`.
-Só se a avaliação do dia não render nenhum corte, rode de novo com `--periodo semana`.
+Se a avaliação do dia render menos de 2 cortes, rode de novo com `--periodo semana` (em outro
+arquivo: `--saida fila-semana.json`, e passe `--fila fila-semana.json` nos comandos seguintes)
+e complete a partir dela.
 
-## 4. Avaliar (no máximo 10 prévias por rodada)
+## 4. Avaliar (no máximo 12 prévias por rodada)
 
 ```bash
 python -m cortes previa N     # imprime o caminho de uma folha com 10 quadros do clipe
@@ -89,8 +93,7 @@ Primeiro traga os cortes que já estão na pauta, para não repetir horário:
 python -m cortes pacote --rodada --ocupados trabalho/db/cortes
 ```
 
-Dá a cada corte o próximo horário livre de hoje (12h00, 18h30 ou 21h00 e as duas horas
-seguintes a cada um) e grava em `saida/postar/` os vídeos numerados (`NN-*.mp4`) e as capas
+Dá a cada corte o próximo horário livre de hoje (de hora em hora, do meio-dia às 23h) e grava em `saida/postar/` os vídeos numerados (`NN-*.mp4`) e as capas
 (`NN-*.jpg`). Cortes desta pasta que já foram para a pauta ficam de fora automaticamente.
 
 ## 7. Colocar na pauta
