@@ -81,7 +81,7 @@ def horarios_ocupados(pasta):
     return ocupados
 
 
-def agendar(metas, agora=None, rodada=False, ocupados=()):
+def agendar(metas, agora=None, rodada=False, ocupados=(), horarios=None):
     """Ordena intercalando os streamers (os mais vistos primeiro) e dá um horário a cada corte.
 
     Padrão: um corte por horário fixo (12h00, 18h30, 21h00), dia após dia.
@@ -98,6 +98,12 @@ def agendar(metas, agora=None, rodada=False, ocupados=()):
         for f in filas:
             if f:
                 ordem.append(f.pop(0))
+    if horarios:  # horários escolhidos à mão, um por corte, na ordem
+        for m, texto in zip(ordem, horarios):
+            quando = datetime.fromisoformat(texto).replace(tzinfo=FUSO)
+            m["postar_em"] = quando.isoformat()
+            m["postar_em_texto"] = f"{DIAS[quando.weekday()]} {quando:%d/%m} às {quando:%H:%M}"
+        return ordem[:len(horarios)]
     if rodada:
         # grade do dia: cada horário fixo e as duas horas seguintes (12h, 13h, 14h, 18h30, ...)
         grade = []
@@ -259,7 +265,7 @@ def linhas(saida="saida", mapa_assets=None):
     return writes, faltando
 
 
-def pacote(saida="saida", rodada=False, agora=None, ocupados=(), todos=False):
+def pacote(saida="saida", rodada=False, agora=None, ocupados=(), todos=False, horarios=None, ordem_ids=None):
     """Fecha o lote: agenda, vídeos numerados em saida/postar/, POSTAR.md e agenda.json.
 
     Depois de subir os vídeos como anexos da pauta, `linhas()` gera os documentos do banco.
@@ -268,7 +274,16 @@ def pacote(saida="saida", rodada=False, agora=None, ocupados=(), todos=False):
     from . import render
     for m in metas:  # garante que todo vídeo cabe como anexo da pauta
         render.compactar(m["arquivo"])
-    ordem = agendar(metas, agora, rodada, ocupados)
+    if ordem_ids:  # ordem escolhida à mão (ids dos clipes); o resto fica de fora
+        por_id = {str(m.get("id")): m for m in metas}
+        metas = [por_id[i] for i in ordem_ids if i in por_id]
+        for m, texto in zip(metas, horarios or []):
+            quando = datetime.fromisoformat(texto).replace(tzinfo=FUSO)
+            m["postar_em"] = quando.isoformat()
+            m["postar_em_texto"] = f"{DIAS[quando.weekday()]} {quando:%d/%m} às {quando:%H:%M}"
+        ordem = metas[:len(horarios or [])]
+    else:
+        ordem = agendar(metas, agora, rodada, ocupados, horarios)
     if not ordem:
         return []
     # cópias numeradas na ordem de postagem, para não haver dúvida de qual vídeo é qual

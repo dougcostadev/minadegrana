@@ -53,6 +53,8 @@ def main():
     pc.add_argument("--agora", help="data/hora de referência (ISO), para refazer uma agenda")
     pc.add_argument("--ocupados", help="pasta com os documentos dos cortes já na pauta, para não repetir horário")
     pc.add_argument("--todos", action="store_true", help="inclui cortes desta pasta que já foram para a pauta")
+    pc.add_argument("--horarios", help="horários escolhidos à mão, separados por vírgula (AAAA-MM-DDTHH:MM)")
+    pc.add_argument("--ids", help="com --horarios: ids dos clipes na ordem desejada, separados por vírgula")
     li = sub.add_parser("linhas", help="gera os documentos do banco da pauta a partir do mapa de anexos")
     li.add_argument("assets", nargs="?", help="JSON {arquivo numerado: id do anexo}")
     sub.add_parser("pagina", help="monta saida/pauta.html (a página da pauta, lida do banco)")
@@ -107,7 +109,10 @@ def main():
         from . import postagem
         agora = datetime.fromisoformat(a.agora).replace(tzinfo=postagem.FUSO) if a.agora else None
         ocupados = postagem.horarios_ocupados(a.ocupados) if a.ocupados else ()
-        for n, m in enumerate(postagem.pacote(rodada=a.rodada, agora=agora, ocupados=ocupados, todos=a.todos), 1):
+        horarios = a.horarios.split(",") if a.horarios else None
+        ids = a.ids.split(",") if a.ids else None
+        for n, m in enumerate(postagem.pacote(rodada=a.rodada, agora=agora, ocupados=ocupados, todos=a.todos,
+                                              horarios=horarios, ordem_ids=ids), 1):
             print(f"{n:02d}  {m['postar_em_texto']:<20} {m['nome']:<16} {m.get('gancho') or ''}")
         print("Vídeos numerados em saida/postar/ e textos em saida/POSTAR.md")
         return
