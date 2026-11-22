@@ -35,12 +35,14 @@ def texto(palavras):
 
 
 def escrever_ass(destino, duracao, palavras=None, y_legenda=1200, gancho=None, y_gancho=540,
-                 palavras_por_bloco=3):
+                 palavras_por_bloco=3, censura=None, y_censura=1200):
     """Gera o .ass (1080x1920). Retorna False se não houver nada para escrever."""
     linhas = []
     if gancho:
         quebrado = "\\N".join(textwrap.wrap(_limpo(gancho), 22)[:3])
         linhas.append(f"Dialogue: 1,{_t(0)},{_t(duracao + 1)},G,,0,0,{y_gancho},,{quebrado}")
+    for ini, fim in censura or []:  # selo sobre o painel pixelizado
+        linhas.append(f"Dialogue: 2,{_t(ini)},{_t(fim)},C,,0,0,{y_censura},,CENSURADO")
     palavras = palavras or []
     for i in range(0, len(palavras), palavras_por_bloco):
         bloco = palavras[i:i + palavras_por_bloco]
@@ -60,6 +62,7 @@ WrapStyle: 2
 Format: Name, Fontname, Fontsize, PrimaryColour, OutlineColour, BackColour, Bold, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV
 Style: P,DejaVu Sans,74,&H0000FFFF,&H00000000,&H80000000,1,1,6,2,8,60,60,0
 Style: G,DejaVu Sans,62,&H00000000,&H00FFFFFF,&H00FFFFFF,1,3,18,0,8,50,50,0
+Style: C,DejaVu Sans,70,&H00FFFFFF,&H00000000,&H00000000,1,3,22,0,8,50,50,0
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text

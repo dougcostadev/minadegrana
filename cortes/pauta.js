@@ -150,7 +150,8 @@
     return el("article", { class: "corte", id: "c-" + id }, [
       el("div", { class: "cabeca" }, [midia, el("div", { class: "resumo" }, [
         el("p", { class: "ordem", text: hora(c.postar_em) + (n ? " · corte " + n : "") }),
-        el("h3", { text: c.gancho || c.titulo_base || "" }), lista, acoes])]),
+        el("h3", { text: c.gancho || c.titulo_base || "" }),
+        c.aviso ? el("p", { class: "alerta", text: c.aviso }) : null, lista, acoes])]),
       redes]);
   }
 

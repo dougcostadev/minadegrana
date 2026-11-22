@@ -37,7 +37,28 @@ def compactar(arquivo):
     return True
 
 
-def renderizar(origem, destino, inicio=None, fim=None, cam=None, legenda_ass=None):
+def _quando(trechos):
+    """Expressão `enable` do ffmpeg para uma lista de (inicio, fim) em segundos."""
+    return "+".join(f"between(t,{a:.2f},{b:.2f})" for a, b in trechos)
+
+
+def _censura(censura, tarjas):
+    """Filtros aplicados só ao painel do jogo: pixelização total e/ou tarjas pretas por trecho.
+
+    censura: [(inicio, fim)] — pixeliza o painel inteiro nesses trechos.
+    tarjas:  [(inicio, fim, x, y, w, h)] — retângulo preto; x, y, w, h são frações do painel (0 a 1).
+    """
+    filtros = ""
+    if censura:
+        filtros += f",pixelize=w=54:h=54:enable='{_quando(censura)}'"
+    for a, b, x, y, w, h in tarjas or []:
+        filtros += (f",drawbox=x=iw*{x:.3f}:y=ih*{y:.3f}:w=iw*{w:.3f}:h=ih*{h:.3f}:color=black:t=fill"
+                    f":enable='{_quando([(a, b)])}'")
+    return filtros
+
+
+def renderizar(origem, destino, inicio=None, fim=None, cam=None, legenda_ass=None, censura=None,
+               tarjas=None):
     """Renderiza um corte. `cam` = (x, y, w, h) da webcam no vídeo original, ou None."""
     if cam:
         x, y, w, h = cam
@@ -46,7 +67,7 @@ def renderizar(origem, destino, inicio=None, fim=None, cam=None, legenda_ass=Non
             f"[0:v]split=2[a][b];"
             f"[a]crop={w}:{h}:{x}:{y},scale={L}:{A_CAM}:force_original_aspect_ratio=increase,"
             f"crop={L}:{A_CAM}[cam];"
-            f"[b]crop=trunc(ih*{L}/{a_jogo}/2)*2:ih,scale={L}:{a_jogo}[jogo];"
+            f"[b]crop=trunc(ih*{L}/{a_jogo}/2)*2:ih,scale={L}:{a_jogo}{_censura(censura, tarjas)}[jogo];"
             f"[cam][jogo]vstack=inputs=2[v0]"
         )
     else:
@@ -54,7 +75,7 @@ def renderizar(origem, destino, inicio=None, fim=None, cam=None, legenda_ass=Non
         filtro = (
             f"[0:v]split=2[a][b];"
             f"[a]scale={L}:{A}:force_original_aspect_ratio=increase,crop={L}:{A},boxblur=24:2[fundo];"
-            f"[b]crop=trunc(ih*4/5/2)*2:ih,scale={L}:1350[jogo];"
+            f"[b]crop=trunc(ih*4/5/2)*2:ih,scale={L}:1350{_censura(censura, tarjas)}[jogo];"
             f"[fundo][jogo]overlay=0:(H-h)/2[v0]"
         )
     if legenda_ass:

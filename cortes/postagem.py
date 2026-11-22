@@ -245,7 +245,7 @@ def linhas(saida="saida", mapa_assets=None):
             "capa": mapa_assets.get(os.path.splitext(arquivo)[0] + ".jpg"),
             "postar_em": m["postar_em"], "postar_em_texto": m["postar_em_texto"],
             "views": m.get("views_do_clipe"), "duracao_s": m.get("duracao_s"),
-            "link_original": m.get("link_original"),
+            "link_original": m.get("link_original"), "aviso": m.get("aviso"),
             "criado_em": datetime.now(FUSO).isoformat(timespec="seconds"),
             "postado": {"yt": False, "tt": False, "ig": False},
         }

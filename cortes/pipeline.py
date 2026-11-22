@@ -164,7 +164,7 @@ def baixar_clipe(clipe, pasta):
 
 
 def processar_clipe(clipe, saida="saida", trabalho="trabalho", legendar=False, cam=None,
-                    gancho=None, titulo=None, legenda=None):
+                    gancho=None, titulo=None, legenda=None, censura=None, tarjas=None):
     """Clipe de espectador -> vídeo vertical com gancho na tela. Retorna os metadados ou None.
 
     Com `gancho` e `titulo` informados (escritos por quem viu o clipe), não consulta a IA.
@@ -197,8 +197,11 @@ def processar_clipe(clipe, saida="saida", trabalho="trabalho", legendar=False, c
     ass = os.path.join(trabalho, nome + ".ass")
     # gancho na divisória entre a cam e o gameplay; legenda logo abaixo, sem cobrir o jogo
     y_gancho, y_legenda = (render.A_CAM - 70, render.A_CAM + 130) if caixa else (150, 330)
-    tem_texto = legendas.escrever_ass(ass, _duracao(bruto), palavras, y_legenda, g["gancho"], y_gancho)
-    render.renderizar(bruto, destino, cam=caixa, legenda_ass=ass if tem_texto else None)
+    y_censura = render.A_CAM + 580 if caixa else 900  # meio do painel do jogo
+    tem_texto = legendas.escrever_ass(ass, _duracao(bruto), palavras, y_legenda, g["gancho"], y_gancho,
+                                      censura=censura, y_censura=y_censura)
+    render.renderizar(bruto, destino, cam=caixa, legenda_ass=ass if tem_texto else None,
+                      censura=censura, tarjas=tarjas)
 
     slug = clipe.get("slug") or canal.lower()
     meta = {
@@ -210,6 +213,11 @@ def processar_clipe(clipe, saida="saida", trabalho="trabalho", legendar=False, c
         "views_do_clipe": clipe["views"], "titulo_do_clipe": clipe["titulo"],
         "duracao_s": round(_duracao(destino)), "facecam": caixa,
     }
+    if censura or tarjas:
+        trechos = sorted([(a, b) for a, b in censura or []] + [(t[0], t[1]) for t in tarjas or []])
+        meta["censura"] = trechos
+        meta["aviso"] = ("Tem trecho censurado (" + ", ".join(f"{a:.0f}s a {b:.0f}s" for a, b in trechos)
+                         + "). Assista ao vídeo inteiro antes de postar.")
     meta["redes"] = postagem.textos(meta)
     meta["titulo"] = meta["redes"]["youtube"]["titulo"]        # usados pelo upload automático
     meta["descricao"] = meta["redes"]["youtube"]["descricao"]

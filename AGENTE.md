@@ -53,7 +53,7 @@ python -m cortes previa N     # imprime o caminho de uma folha com 10 quadros do
 
 Abra a imagem e veja o que acontece. **Descarte** (`python -m cortes descartar N`) se for:
 
-- cena de sexo, nudez ou insinuação sexual explícita do jogo (são muito comuns: descarte sem hesitar);
+- cena em que o ato sexual é o assunto do clipe (ver "Cenas sensuais do jogo", abaixo);
 - propaganda de patrocinador, sorteio, cupom, pedido de sub;
 - conversa com o chat ou momento sem situação e desfecho compreensíveis para quem não viu a live;
 - final ou reviravolta grande da história (spoiler);
@@ -62,6 +62,20 @@ Abra a imagem e veja o que acontece. **Descarte** (`python -m cortes descartar N
 
 Canais listados em `nao_cortar.txt` nunca são usados. Se os 10 quadros não bastarem, extraia
 mais quadros com ffmpeg do arquivo em `trabalho/`.
+
+### Cenas sensuais do jogo
+
+O GTA 6 tem muita cena assim e elas rendem clipes. A regra do dono do canal:
+
+| O que aparece | O que fazer |
+|---|---|
+| **Sugestivo, sem nudez e sem ato sexual**: biquíni, flerte, beijo, dança de roupa, piada de duplo sentido | Pode entrar normalmente, se tiver situação e desfecho. |
+| **Nudez** (seios, nádegas ou genitais à mostra) em parte do clipe | Pode entrar **com censura** cobrindo toda a nudez, do primeiro ao último quadro em que aparece. |
+| **Ato sexual de passagem** (até cerca de um terço do clipe) e a graça é a reação do streamer | Pode entrar **com o trecho inteiro pixelizado**. |
+| **Ato sexual como assunto do clipe** (cena de sexo, strip ou lap dance na maior parte do tempo) | Descarte. Censurado não sobra vídeo, e TikTok e Instagram removem mesmo assim. |
+
+Gancho, título e legenda nunca usam termo sexual, nem nesses clipes. Na dúvida entre duas linhas
+da tabela, escolha a mais conservadora.
 
 ## 5. Montar os aprovados
 
@@ -78,6 +92,20 @@ Escreva para cada um:
 ```bash
 python -m cortes montar N --gancho "..." --titulo "..." --legenda "..."
 ```
+
+**Clipe que precisa de censura.** Monte primeiro sem censura, extraia um quadro por segundo
+do resultado (`ffmpeg -y -v error -i saida/x.mp4 -vf fps=1,scale=270:-1 trabalho/q-%02d.png`) e anote
+em que segundos a nudez ou o ato aparece. Depois monte de novo, com o mesmo gancho, título e
+legenda, acrescentando uma das opções (com 1 segundo de folga antes e depois de cada trecho):
+
+- `--censurar "12-19,24-30"`: pixeliza o painel do jogo inteiro nesses trechos e põe o selo
+  CENSURADO. É a opção segura para cena com movimento de câmera.
+- `--tarja "12-19:0.30,0.40,0.40,0.30"`: tarja preta só numa região, em frações do painel do jogo
+  (x, y, largura, altura). Use apenas em plano parado; separe várias com `;`.
+
+Extraia de novo um quadro por segundo e confira **todos** os quadros dos trechos e das bordas
+deles: se sobrar qualquer nudez visível, aumente o trecho ou troque a tarja por `--censurar`.
+Se não conseguir cobrir tudo, apague o `.mp4` e o `.json` desse corte e descarte o clipe.
 
 Confira um quadro do resultado (`ffmpeg -y -v error -ss 5 -i saida/x.mp4 -frames:v 1 -vf scale=360:-1 q.png`):
 o gancho precisa estar legível e a parte de cima deve mostrar o rosto do streamer. Se a cam

@@ -103,3 +103,4 @@ h4 { margin: 0; font-size: 14px; font-weight: 700; color: var(--marca-rede); }
 .anteriores summary { cursor: pointer; font-family: var(--display); font-size: 24px; letter-spacing: .03em; text-transform: uppercase; }
 .anteriores .conta { font-family: var(--texto); font-size: 14px; color: var(--suave); letter-spacing: 0; }
 .anteriores[open] summary { margin-bottom: 16px; }
+.alerta { margin: 0; padding: 6px 10px; border-left: 3px solid var(--sol); background: var(--campo); border-radius: 4px; font-size: 13px; font-weight: 600; }
