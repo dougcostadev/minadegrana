@@ -69,6 +69,8 @@ def main():
     de.add_argument("n", type=int)
     for x in (pv, mo, de):
         x.add_argument("--fila", default="fila.json")
+    ca = sub.add_parser("canal", help="lista os Shorts públicos do canal no YouTube, com as views")
+    ca.add_argument("--canal", default="@clipeleonida")
     sub.add_parser("autorizar", help="gera o YT_REFRESH_TOKEN (rodar uma vez, na sua máquina)")
 
     a = p.parse_args()
@@ -149,6 +151,16 @@ def main():
             print(auto.estado_carregar(a.arquivo), "id(s) novos trazidos do banco")
         else:
             print(auto.estado_exportar(a.arquivo), "id(s) recentes gravados em", a.arquivo)
+        return
+    if a.cmd == "canal":
+        import yt_dlp
+        from . import yt
+        with yt_dlp.YoutubeDL(yt.opcoes(extract_flat=True, playlistend=200, ignoreerrors=True)) as ydl:
+            info = ydl.extract_info(f"https://www.youtube.com/{a.canal}/shorts", download=False) or {}
+        itens = [e for e in info.get("entries") or [] if e]
+        print(f"{info.get('channel')} · {info.get('channel_follower_count')} inscritos · {len(itens)} Shorts públicos")
+        for e in itens:
+            print(f"  {e.get('view_count') or 0:>7,}  {e.get('title')}")
         return
     if a.cmd == "autorizar":
         from . import publicar
