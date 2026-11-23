@@ -37,7 +37,16 @@ mínima e siga.
 
 ## 2. Trazer a lista de clipes já usados e liberar espaço
 
-A lista mora no banco da biblioteca, não no git.
+**Uma rodada por vez.** Antes de qualquer outra coisa:
+
+- `ArtifactData` com `action: "get"`, `url: BIBLIOTECA`, `collection: "estado"`, `doc_id: "rodada"`.
+- Veja a hora atual com `date -u +%Y-%m-%dT%H:%M:%SZ`. Se o documento tiver `inicio` de menos de
+  40 minutos atrás e **não** tiver `fim`, outra rodada está trabalhando agora: não faça mais
+  nada e responda só que esta rodada foi pulada por isso, com o link da BIBLIOTECA.
+- Caso contrário, grave nele (`action: "set"`, com `if_version` igual à versão lida, se o
+  documento existir) `{"inicio": "<hora atual em UTC>"}` e siga.
+
+A lista de clipes usados mora no banco da biblioteca, não no git.
 
 1. `ArtifactData` com `action: "get"`, `url: BIBLIOTECA`, `collection: "estado"`, `doc_id: "usados"`,
    `out_dir: "<caminho absoluto>/trabalho/db"`. **Anote a `version`** que o resultado mostra.
@@ -201,6 +210,8 @@ Sempre, mesmo quando nenhum corte saiu (os descartados também contam):
 1. `python -m cortes estado exportar`
 2. `ArtifactData` com `action: "set"`, `url: BIBLIOTECA`, `collection: "estado"`, `doc_id: "usados"`,
    `file_path: "<caminho absoluto>/saida/estado.json"` e `if_version` com a versão anotada no passo 2.
+3. Libere a vez: `ArtifactData` com `action: "update"`, `collection: "estado"`, `doc_id: "rodada"`,
+   `data: {"fim": "<hora atual em UTC>"}` e `if_version` com a versão que a gravação do passo 2 devolveu.
 
 ## 9. Resumo final
 
