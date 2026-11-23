@@ -97,6 +97,11 @@ Abra a imagem e veja o que acontece. **Descarte** (`python -m cortes descartar N
 - qualquer coisa com ofensa a grupo de pessoas;
 - prévia que responde "não é GTA 6 (ou não baixou)".
 
+Descarte também a **cena repetida**: alguns streamers são acompanhados na Twitch e na Kick ao
+mesmo tempo, e o mesmo momento aparece clipado nas duas. Antes de montar, compare com os cortes
+desta rodada e com os documentos de `trabalho/db/cortes` (campos `gancho` e `titulo_base`): se a
+mesma cena do mesmo streamer já está na biblioteca, descarte.
+
 Canais listados em `nao_cortar.txt` nunca são usados. Se os 10 quadros não bastarem, extraia
 mais quadros com ffmpeg do arquivo em `trabalho/`.
 

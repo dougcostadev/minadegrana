@@ -21,7 +21,10 @@ DIAS = ["seg", "ter", "qua", "qui", "sex", "sáb", "dom"]
 
 # login da plataforma -> nome pelo qual o público conhece o streamer
 NOMES = {"tioorochitwitch": "Tio Orochi", "paulinholokobr": "Paulinho o Loko", "xarola_": "Xarola",
-         "rincon061tv": "Rincon", "gabepeixe": "Gabepeixe", "bistecone": "Bistecone"}
+         "rincon061tv": "Rincon", "gabepeixe": "Gabepeixe", "bistecone": "Bistecone",
+         "bisteconee": "Bistecone", "snopey": "Snopey", "brino": "Brino", "thedarkness": "The Darkness",
+         "blackoutz": "Blackoutz", "baiano": "Baiano", "malena0202": "Malena", "brabox": "Brabox",
+         "yoda": "YoDa", "tck10": "TCK", "jonvlogs": "Jon Vlogs"}
 
 
 def nome(canal):
