@@ -119,6 +119,10 @@ saiu errada, monte de novo informando a posição dela no vídeo original com `-
 (meça num quadro do arquivo em `trabalho/`). Se nem assim ficar boa, apague o `.mp4` e o
 `.json` desse corte de `saida/` e siga com os outros.
 
+Todo corte sai com a marca "LEONIDA CLIPES" no canto de cima e, nos 3 segundos finais, a
+chamada "SEGUE PRA MAIS / GTA 6 TODO DIA" sobre o jogo. Isso é automático (`cortes/legendas.py`):
+não tire e não repita o pedido de seguir no gancho.
+
 ## 6. Fechar o lote
 
 ```bash
