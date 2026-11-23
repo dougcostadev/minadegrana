@@ -8,7 +8,8 @@
   ];
   var $ = function (id) { return document.getElementById(id); };
   var aviso = $("aviso"), secAgenda = $("sec-agenda"), agenda = $("agenda"), atuais = $("cortes"),
-      antigosBox = $("anteriores"), antigos = $("cortes-antigos"), nAntigos = $("n-anteriores");
+      antigosBox = $("anteriores"), antigos = $("cortes-antigos"), nAntigos = $("n-anteriores"),
+      secPend = $("sec-pendentes"), pend = $("pendentes");
   var db = null, assinatura = null, caixas = {}, contadores = {}, gravando = {};
 
   function el(tag, props, filhos) {
@@ -149,7 +150,7 @@
     if (c.views) lista.appendChild(item("Clipe original", Number(c.views).toLocaleString("pt-BR") + " views"));
     return el("article", { class: "corte", id: "c-" + id }, [
       el("div", { class: "cabeca" }, [midia, el("div", { class: "resumo" }, [
-        el("p", { class: "ordem", text: hora(c.postar_em) + (n ? " · corte " + n : "") }),
+        el("p", { class: "ordem", text: n ? hora(c.postar_em) + " · corte " + n : (c.postar_em_texto || hora(c.postar_em)) }),
         el("h3", { text: c.gancho || c.titulo_base || "" }),
         c.aviso ? el("p", { class: "alerta", text: c.aviso }) : null, lista, acoes])]),
       redes]);
@@ -158,7 +159,7 @@
   function montar(docs) {
     var hoje = diaDe(new Date()), amanha = diaDe(new Date(Date.now() + 864e5));
     caixas = {}; contadores = {};
-    atuais.textContent = ""; antigos.textContent = ""; agenda.textContent = "";
+    atuais.textContent = ""; antigos.textContent = ""; agenda.textContent = ""; pend.textContent = "";
     var grupos = {}, ordemDias = [];
     docs.forEach(function (x) {
       x.dia = diaDe(new Date(x.c.postar_em));
@@ -167,13 +168,17 @@
     });
     var futuros = ordemDias.filter(function (d) { return d >= hoje; }).sort();
     var passados = ordemDias.filter(function (d) { return d < hoje; }).sort().reverse();
-    var secao = function (dia) {
+    var completo = function (x) {
+      var p = x.c.postado || {};
+      return !!(p.yt && p.tt && p.ig);
+    };
+    var secao = function (dia, itens) {
       var s = el("section", { class: "dia" }, [el("h2", { text: rotuloDia(dia, hoje, amanha) })]);
-      grupos[dia].forEach(function (x, i) { s.appendChild(cartao(x.id, x.c, i + 1)); });
+      itens.forEach(function (x, i) { s.appendChild(cartao(x.id, x.c, i + 1)); });
       return s;
     };
     futuros.forEach(function (dia) {
-      atuais.appendChild(secao(dia));
+      atuais.appendChild(secao(dia, grupos[dia]));
       grupos[dia].forEach(function (x) {
         var status = el("span", { class: "status" });
         (contadores[x.id] = contadores[x.id] || []).push(status);
@@ -184,11 +189,20 @@
           el("span", { class: "quem", text: x.c.nome || "" }), status])]));
       });
     });
-    passados.forEach(function (dia) { antigos.appendChild(secao(dia)); });
+    // dias anteriores: o que ainda tem rede sem marcar fica à vista; o que já foi todo postado vai para o arquivo
+    var atrasados = docs.filter(function (x) { return x.dia < hoje && !completo(x); }).reverse();
+    atrasados.forEach(function (x) { pend.appendChild(cartao(x.id, x.c, 0)); });
+    secPend.hidden = !atrasados.length;
+    var arquivados = 0;
+    passados.forEach(function (dia) {
+      var feitos = grupos[dia].filter(completo);
+      arquivados += feitos.length;
+      if (feitos.length) antigos.appendChild(secao(dia, feitos));
+    });
     Object.keys(caixas).forEach(contar);
     secAgenda.hidden = !futuros.length;
-    antigosBox.hidden = !passados.length;
-    nAntigos.textContent = passados.length ? "(" + docs.filter(function (x) { return x.dia < hoje; }).length + ")" : "";
+    antigosBox.hidden = !arquivados;
+    nAntigos.textContent = arquivados ? "(" + arquivados + ")" : "";
     if (!docs.length) avisar("Nenhum corte na pauta ainda. Os cortes de cada rodada aparecem aqui, com o vídeo para baixar e os textos de cada rede.");
     else if (!futuros.length) avisar("Nada agendado de hoje em diante. A próxima rodada traz os cortes do dia.");
     else avisar("");
