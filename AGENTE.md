@@ -75,9 +75,12 @@ python -m cortes fila --periodo dia
 
 Lista os clipes das últimas 24h ainda não usados, intercalando os canais de `canais.txt`.
 Avalie essa fila primeiro. Se ela render menos de 2 cortes, ou se acabar e ainda sobrar
-orçamento de prévias e de cortes, rode de novo com `--periodo semana` (em outro arquivo:
-`--saida fila-semana.json`, e passe `--fila fila-semana.json` nos comandos seguintes) e
-continue a partir dela.
+orçamento de prévias e de cortes, monte a fila da semana em outro arquivo e continue a partir
+dela (passe `--fila fila-semana.json` nos comandos seguintes):
+
+```bash
+python -m cortes fila --periodo semana --por-canal 8 --min-semana 250 --total 60 --saida fila-semana.json
+```
 
 ## 4. Avaliar (no máximo 24 prévias por rodada)
 
@@ -126,6 +129,10 @@ Escreva para cada um:
 ```bash
 python -m cortes montar N --gancho "..." --titulo "..." --legenda "..."
 ```
+
+Se o clipe tiver algo que o dono precisa saber antes de postar (palavrão no áudio ou escrito na
+tela, cam cortada, cena no limite da regra), acrescente `--aviso "..."` com uma frase curta: ela
+aparece na página, ao lado do clipe.
 
 **Clipe que precisa de censura.** Monte primeiro sem censura, extraia um quadro por segundo
 do resultado (`ffmpeg -y -v error -i saida/x.mp4 -vf fps=1,scale=270:-1 trabalho/q-%02d.png`) e anote
@@ -196,3 +203,6 @@ Em poucas linhas: quais cortes entraram na biblioteca, de quais streamers, com q
 (palavrão no áudio, censura, cam), o que foi descartado e por quê, quantos vídeos de clipes já
 postados foram apagados, quanto espaço resta e qualquer problema.
 Termine com o link da BIBLIOTECA. Se nada prestou, não force: diga isso.
+
+Por último, deixe o repositório como estava: `git checkout -- processados.txt` (a lista de
+verdade já foi gravada no banco no passo 8). A rodada não faz commit nem push.

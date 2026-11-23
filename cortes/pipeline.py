@@ -164,7 +164,7 @@ def baixar_clipe(clipe, pasta):
 
 
 def processar_clipe(clipe, saida="saida", trabalho="trabalho", legendar=False, cam=None,
-                    gancho=None, titulo=None, legenda=None, censura=None, tarjas=None):
+                    gancho=None, titulo=None, legenda=None, censura=None, tarjas=None, aviso=None):
     """Clipe de espectador -> vídeo vertical com gancho na tela. Retorna os metadados ou None.
 
     Com `gancho` e `titulo` informados (escritos por quem viu o clipe), não consulta a IA.
@@ -219,6 +219,8 @@ def processar_clipe(clipe, saida="saida", trabalho="trabalho", legendar=False, c
         meta["censura"] = trechos
         meta["aviso"] = ("Tem trecho censurado (" + ", ".join(f"{a:.0f}s a {b:.0f}s" for a, b in trechos)
                          + "). Assista ao vídeo inteiro antes de postar.")
+    if aviso:  # ressalva do editor (palavrão, cam torta...), aparece na página da biblioteca
+        meta["aviso"] = " ".join(x for x in (meta.get("aviso"), aviso.strip()) if x)
     meta["redes"] = postagem.textos(meta)
     meta["titulo"] = meta["redes"]["youtube"]["titulo"]        # usados pelo upload automático
     meta["descricao"] = meta["redes"]["youtube"]["descricao"]

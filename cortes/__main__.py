@@ -54,6 +54,7 @@ def main():
                     help="posição da facecam no vídeo original, x:y:w:h, quando a detecção errar")
     mo.add_argument("--censurar", help='trechos em segundos em que o painel do jogo fica pixelizado: "12-19,24-30"')
     mo.add_argument("--tarja", help='tarjas pretas: "inicio-fim:x,y,w,h" (frações do painel do jogo), separadas por ";"')
+    mo.add_argument("--aviso", help="ressalva para o dono do canal ler antes de postar (palavrão no áudio, cam torta...)")
     mo.add_argument("--privacidade", default="private", choices=["private", "unlisted", "public"])
     pc = sub.add_parser("pacote", help="fecha o lote: vídeos e capas em saida/postar/ e POSTAR.md (sem horários)")
     pc.add_argument("--rodada", action="store_true", help="com horários: tudo no mesmo dia, nos horários livres")
@@ -119,7 +120,7 @@ def main():
                     tempo, caixa = item.split(":")
                     tarjas.append(tuple(float(v) for v in tempo.split("-")) + tuple(float(v) for v in caixa.split(",")))
             meta = pipeline.processar_clipe(clipe, gancho=a.gancho, titulo=a.titulo, legenda=a.legenda,
-                                            censura=censura, tarjas=tarjas, cam=a.cam)
+                                            censura=censura, tarjas=tarjas, cam=a.cam, aviso=a.aviso)
             if meta and publicar.configurado():
                 meta["publicado"] = publicar.enviar(meta, a.privacidade)
             auto.marcar(clipe["id"])
