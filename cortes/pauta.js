@@ -146,7 +146,7 @@
       lado.appendChild(el("div", { class: "acoes" }, [baixa,
         el("a", { class: "abrir", href: "/_blob/" + c.asset, target: "_blank", rel: "noopener", text: "Abrir vídeo" })]));
     } else {
-      lado.appendChild(el("p", { class: "sem-video", text: "Este clipe não tem vídeo anexado." }));
+      lado.appendChild(el("p", { class: "sem-video", text: c.video_removido ? "Vídeo apagado depois de postado nas três redes, para liberar espaço. Os textos continuam aqui." : "Este clipe não tem vídeo anexado." }));
     }
     var some = el("button", { type: "button", class: "leve", text: c.descartado ? "Restaurar clipe" : "Descartar clipe" });
     some.addEventListener("click", function () { descartar(x, !c.descartado); });

@@ -199,7 +199,8 @@ def processar_clipe(clipe, saida="saida", trabalho="trabalho", legendar=False, c
     y_gancho, y_legenda = (render.A_CAM - 70, render.A_CAM + 130) if caixa else (150, 330)
     y_censura = render.A_CAM + 580 if caixa else 900  # meio do painel do jogo
     tem_texto = legendas.escrever_ass(ass, _duracao(bruto), palavras, y_legenda, g["gancho"], y_gancho,
-                                      censura=censura, y_censura=y_censura)
+                                      censura=censura, y_censura=y_censura,
+                                      y_marca=legendas.Y_MARCA if caixa else legendas.Y_MARCA_SEM_CAM)
     render.renderizar(bruto, destino, cam=caixa, legenda_ass=ass if tem_texto else None,
                       censura=censura, tarjas=tarjas)
 

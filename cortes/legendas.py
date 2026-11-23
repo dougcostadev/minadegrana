@@ -38,17 +38,20 @@ def texto(palavras):
 MARCA = "LEONIDA CLIPES"
 CHAMADA = "SEGUE PRA MAIS\\NGTA 6 TODO DIA"
 CHAMADA_SEG = 3.0
+Y_MARCA = 214          # com câmera em cima: abaixo da barra dos aplicativos
+Y_MARCA_SEM_CAM = 372  # sem câmera o gancho fica no topo: a marca desce para dentro do jogo
 
 
 def escrever_ass(destino, duracao, palavras=None, y_legenda=1200, gancho=None, y_gancho=540,
-                 palavras_por_bloco=3, censura=None, y_censura=1200, marca=MARCA, chamada=CHAMADA):
+                 palavras_por_bloco=3, censura=None, y_censura=1200, marca=MARCA, chamada=CHAMADA,
+                 y_marca=Y_MARCA):
     """Gera o .ass (1080x1920). Retorna False se não houver nada para escrever."""
     linhas = []
     if gancho:
         quebrado = "\\N".join(textwrap.wrap(_limpo(gancho), 22)[:3])
         linhas.append(f"Dialogue: 1,{_t(0)},{_t(duracao + 1)},G,,0,0,{y_gancho},,{quebrado}")
-    if marca:      # canto superior esquerdo, abaixo da barra dos aplicativos
-        linhas.append(f"Dialogue: 3,{_t(0)},{_t(duracao + 1)},M,,0,0,0,,{_limpo(marca)}")
+    if marca:      # canto esquerdo: sobre a câmera, ou logo abaixo do gancho quando não há câmera
+        linhas.append(f"Dialogue: 3,{_t(0)},{_t(duracao + 1)},M,,0,0,{y_marca},,{_limpo(marca)}")
     if chamada and duracao > CHAMADA_SEG + 4:  # parte de baixo do jogo, acima da legenda dos aplicativos
         linhas.append(f"Dialogue: 4,{_t(duracao - CHAMADA_SEG)},{_t(duracao + 1)},S,,0,0,0,,{{\\fad(250,0)}}{chamada}")
     for ini, fim in censura or []:  # selo sobre o painel pixelizado
