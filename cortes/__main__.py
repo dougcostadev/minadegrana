@@ -38,6 +38,9 @@ def main():
     fi = sub.add_parser("fila", help="salva em fila.json os clipes em alta ainda não usados, de todos os canais")
     fi.add_argument("--saida", default="fila.json")
     fi.add_argument("--canais", default="canais.txt", help="arquivo com a lista de canais")
+    fi.add_argument("--por-canal", type=int, default=4, help="máximo de clipes por streamer na fila")
+    fi.add_argument("--min-semana", type=int, default=500, help="views mínimas para clipe da semana")
+    fi.add_argument("--total", type=int, default=40)
     fi.add_argument("--periodo", default="ambos", choices=["dia", "semana", "ambos"],
                     help="dia = só clipes das últimas 24h")
     pv = sub.add_parser("previa", help="baixa o clipe N da fila e gera uma folha de quadros para avaliar")
@@ -52,8 +55,9 @@ def main():
     mo.add_argument("--censurar", help='trechos em segundos em que o painel do jogo fica pixelizado: "12-19,24-30"')
     mo.add_argument("--tarja", help='tarjas pretas: "inicio-fim:x,y,w,h" (frações do painel do jogo), separadas por ";"')
     mo.add_argument("--privacidade", default="private", choices=["private", "unlisted", "public"])
-    pc = sub.add_parser("pacote", help="fecha o lote: agenda, vídeos numerados em saida/postar/ e POSTAR.md")
-    pc.add_argument("--rodada", action="store_true", help="produção do dia: tudo no mesmo dia, de hora em hora")
+    pc = sub.add_parser("pacote", help="fecha o lote: vídeos e capas em saida/postar/ e POSTAR.md (sem horários)")
+    pc.add_argument("--rodada", action="store_true", help="com horários: tudo no mesmo dia, nos horários livres")
+    pc.add_argument("--agendado", action="store_true", help="com horários fixos (12h00, 18h30, 21h00), dia após dia")
     pc.add_argument("--agora", help="data/hora de referência (ISO), para refazer uma agenda")
     pc.add_argument("--ocupados", help="pasta com os documentos dos cortes já na pauta, para não repetir horário")
     pc.add_argument("--todos", action="store_true", help="inclui cortes desta pasta que já foram para a pauta")
@@ -88,7 +92,8 @@ def main():
         return
     if a.cmd == "fila":
         from . import auto
-        fila = auto.montar_fila(a.canais, periodo=a.periodo)
+        fila = auto.montar_fila(a.canais, periodo=a.periodo, por_canal=a.por_canal,
+                                min_semana=a.min_semana, total=a.total)
         with open(a.saida, "w", encoding="utf-8") as f:
             json.dump(fila, f, ensure_ascii=False, indent=1)
         for n, c in enumerate(fila):
@@ -126,9 +131,9 @@ def main():
         horarios = a.horarios.split(",") if a.horarios else None
         ids = a.ids.split(",") if a.ids else None
         for n, m in enumerate(postagem.pacote(rodada=a.rodada, agora=agora, ocupados=ocupados, todos=a.todos,
-                                              horarios=horarios, ordem_ids=ids), 1):
-            print(f"{n:02d}  {m['postar_em_texto']:<20} {m['nome']:<16} {m.get('gancho') or ''}")
-        print("Vídeos numerados em saida/postar/ e textos em saida/POSTAR.md")
+                                              horarios=horarios, ordem_ids=ids, agendado=a.agendado), 1):
+            print(f"{n:02d}  {m.get('postar_em_texto') or '':<20} {m['nome']:<16} {m.get('gancho') or ''}")
+        print("Vídeos e capas em saida/postar/ e textos em saida/POSTAR.md")
         return
     if a.cmd == "linhas":
         from . import postagem

@@ -54,23 +54,25 @@ propaganda, sorteio, cena de sexo do jogo e spoiler do final. Sem a chave, o gan
 título que o espectador deu ao clipe, quando ele presta, e um filtro por palavras barra o
 resto.
 
-## Pauta de postagem
+## Biblioteca de clipes
 
-A pauta é uma página (um Artifact do Claude) que lista os cortes por dia, com o vídeo para
-baixar, a capa e os textos prontos para YouTube Shorts, TikTok e Instagram Reels. Ela lê tudo
-do banco de dados dela mesma, então cada rodada só acrescenta dados:
+A biblioteca é uma página (um Artifact do Claude) com todos os cortes prontos: capa, vídeo
+para baixar e os textos de YouTube Shorts, TikTok e Instagram Reels. Não há agenda: quem posta
+escolhe o que, quando e onde, e marca na página onde cada corte já saiu. Ela lê tudo do banco
+de dados dela mesma, então cada rodada só acrescenta dados:
 
 ```bash
 python -m cortes fila --periodo dia   # clipes das últimas 24h de todos os canais de canais.txt
 python -m cortes previa 3             # folha de quadros do clipe 3, para avaliar
 python -m cortes montar 3 --gancho "..." --titulo "..." --legenda "..."
-python -m cortes pacote --rodada      # agenda de hoje, vídeos e capas numerados em saida/postar/
+python -m cortes pacote               # vídeos e capas em saida/postar/
 python -m cortes linhas saida/assets.json   # documentos do banco, depois de anexar os vídeos
 ```
 
 `python -m cortes pagina` monta a página (`saida/pauta.html`) quando o layout muda.
 A lista de clipes já usados fica no documento `estado/usados` do mesmo banco
-(`python -m cortes estado carregar|exportar`).
+(`python -m cortes estado carregar|exportar`). `python -m cortes canal` lista os Shorts
+públicos do canal com as views.
 
 O roteiro completo de uma rodada está em `AGENTE.md`; a skill `/cortes-do-dia` executa esse
 roteiro sob demanda, e uma tarefa agendada o executa três vezes por dia.

@@ -1,21 +1,23 @@
 (function () {
   "use strict";
-  var FUSO = "America/Sao_Paulo";
   var REDES = [
     { k: "yt", curto: "YT", nome: "YouTube", campos: function (r) { return [["Título", r.youtube.titulo], ["Descrição", r.youtube.descricao], ["Tags", r.youtube.tags]]; } },
     { k: "tt", curto: "TT", nome: "TikTok", campos: function (r) { return [["Legenda", r.tiktok]]; } },
     { k: "ig", curto: "IG", nome: "Instagram", campos: function (r) { return [["Legenda", r.instagram]]; } }
   ];
-  var FAIXAS = ["agora", "proximos", "feitos", "descartados"];
+  var FAIXAS = ["livres", "feitos", "descartados"], ORDENS = ["novos", "vistos", "curtos"];
   var $ = function (id) { return document.getElementById(id); };
-  var aviso = $("aviso"), controles = $("controles"), explica = $("explica"), lista = $("lista");
-  var db = null, docs = [], abertos = {}, desenhado = null, gravando = {};
-  var ver = { rede: "todas", faixa: "agora" };
+  var aviso = $("aviso"), controles = $("controles"), explica = $("explica"), grade = $("grade"),
+      resumo = $("resumo"), busca = $("busca"), selStreamer = $("streamer"), selOrdem = $("ordem");
+  var db = null, docs = [], aberto = null, desenhado = null, gravando = {};
+  var ver = { rede: "todas", faixa: "livres", ordem: "novos", streamer: "", busca: "" };
   try {
-    var salvo = JSON.parse(localStorage.getItem("pauta-ver") || "{}");
+    var salvo = JSON.parse(localStorage.getItem("biblioteca-ver") || "{}");
     if (salvo.rede === "todas" || REDES.some(function (r) { return r.k === salvo.rede; })) ver.rede = salvo.rede;
     if (FAIXAS.indexOf(salvo.faixa) >= 0) ver.faixa = salvo.faixa;
+    if (ORDENS.indexOf(salvo.ordem) >= 0) ver.ordem = salvo.ordem;
   } catch (e) {}
+  selOrdem.value = ver.ordem;
 
   function el(tag, props, filhos) {
     var n = document.createElement(tag), k;
@@ -27,31 +29,25 @@
     (filhos || []).forEach(function (f) { if (f) n.appendChild(f); });
     return n;
   }
-  function fmt(opcoes) { opcoes.timeZone = FUSO; return new Intl.DateTimeFormat("pt-BR", opcoes); }
-  function diaDe(d) { // AAAA-MM-DD no fuso de Brasília
-    var o = {};
-    fmt({ year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(d)
-      .forEach(function (x) { o[x.type] = x.value; });
-    return o.year + "-" + o.month + "-" + o.day;
-  }
-  function hora(iso) { return fmt({ hour: "2-digit", minute: "2-digit" }).format(new Date(iso)); }
-  function quando(x, hoje, amanha) {
-    var h = hora(x.c.postar_em);
-    if (x.dia === hoje) return "hoje " + h;
-    if (x.dia === amanha) return "amanhã " + h;
-    var sem = fmt({ weekday: "short" }).format(new Date(x.dia + "T12:00:00-03:00")).replace(".", "");
-    return sem + " " + x.dia.slice(8) + "/" + x.dia.slice(5, 7) + " " + h;
-  }
   function avisar(texto) { aviso.textContent = texto; aviso.hidden = !texto; }
+  function lembrar() {
+    try { localStorage.setItem("biblioteca-ver", JSON.stringify({ rede: ver.rede, faixa: ver.faixa, ordem: ver.ordem })); } catch (e) {}
+  }
+  function semAcento(t) { return (t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, ""); }
 
-  function pendente(x, rede) {
+  function falta(x, rede) {
     var p = x.c.postado || {};
     return rede === "todas" ? !(p.yt && p.tt && p.ig) : !p[rede];
   }
-  function faixaDe(x, rede, hoje) {
+  function faixaDe(x, rede) {
     if (x.c.descartado) return "descartados";
-    if (!pendente(x, rede)) return "feitos";
-    return x.dia <= hoje ? "agora" : "proximos";
+    return falta(x, rede) ? "livres" : "feitos";
+  }
+  function detalhe(c) {
+    var partes = [c.nome || c.canal || ""];
+    if (c.duracao_s) partes.push(c.duracao_s + "s");
+    if (c.views) partes.push(Number(c.views).toLocaleString("pt-BR") + " views na live");
+    return partes.join(" · ");
   }
 
   function gravar(x, patch, desfazer) {
@@ -130,104 +126,109 @@
     });
     return caixa;
   }
-  function midia(c) {
-    if (!c.asset) return el("p", { class: "sem-video", text: "Vídeo não anexado: use o arquivo enviado na conversa." });
-    var botao = el("button", { type: "button", class: "baixar", text: "Baixar vídeo" });
-    botao.addEventListener("click", function () { baixar(botao, c); });
-    return el("div", { class: "acoes" }, [botao,
-      el("a", { class: "abrir", href: "/_blob/" + c.asset, target: "_blank", rel: "noopener", text: "Abrir vídeo" })]);
-  }
-  function capa(c, classe) {
-    return c.capa ? el("img", { class: classe, src: "/_blob/" + c.capa, alt: "", loading: "lazy" }) : el("div", { class: classe });
-  }
-  function botaoDescartar(x) {
-    var b = el("button", { type: "button", class: "leve", text: x.c.descartado ? "Restaurar corte" : "Descartar corte" });
-    b.addEventListener("click", function () { descartar(x, !x.c.descartado); });
+  function botaoRede(x, r) {
+    var posto = !!(x.c.postado && x.c.postado[r.k]);
+    var b = el("button", { type: "button", class: "marca-rede marca-" + r.k + (posto ? " on" : ""), "aria-pressed": posto ? "true" : "false",
+      text: posto ? "Postado no " + r.nome + " (desfazer)" : "Marcar como postado no " + r.nome });
+    b.addEventListener("click", function () { marcar(x, r.k, !posto); });
     return b;
   }
 
-  function linha(x, hoje, amanha) {
-    var c = x.c, p = c.postado || {}, atrasado = x.dia < hoje && !c.descartado && pendente(x, ver.rede);
-    var chips = el("div", { class: "chips" });
-    REDES.forEach(function (r) {
-      var chip = el("button", { type: "button", class: "chip chip-" + r.k + (p[r.k] ? " on" : ""),
-        "aria-pressed": p[r.k] ? "true" : "false",
-        "aria-label": r.nome + (p[r.k] ? ": postado" : ": falta postar"), text: r.curto });
-      chip.addEventListener("click", function (ev) { ev.stopPropagation(); marcar(x, r.k, !p[r.k]); });
-      chips.appendChild(chip);
-    });
-    var topo = el("div", { class: "linha-topo" }, [
-      capa(c, "mini"),
-      el("div", { class: "linha-texto" }, [
-        el("p", { class: "quando" + (atrasado ? " atrasado" : ""), text: quando(x, hoje, amanha) + (atrasado ? " · atrasado" : "") + " · " + (c.nome || "") }),
-        el("p", { class: "gancho", text: c.gancho || c.titulo_base || "" })]),
-      chips]);
-    var art = el("article", { class: "corte", id: "c-" + x.id }, [topo]);
-    var umaRede = ver.rede !== "todas";
-    var aberto = umaRede ? ver.faixa !== "feitos" : !!abertos[x.id];
-
-    if (!umaRede) {
-      var alterna = el("button", { type: "button", class: "leve abre", "aria-expanded": aberto ? "true" : "false",
-        text: aberto ? "Fechar" : "Abrir textos e vídeo" });
-      alterna.addEventListener("click", function () { abertos[x.id] = !abertos[x.id]; desenhar(true); });
-      art.appendChild(alterna);
-    }
-    if (!aberto) return art;
-
-    var corpo = el("div", { class: "corpo" });
-    if (c.aviso) corpo.appendChild(el("p", { class: "alerta", text: c.aviso }));
-    if (umaRede) {
-      var rede = REDES.filter(function (r) { return r.k === ver.rede; })[0];
-      corpo.appendChild(midia(c));
-      corpo.appendChild(campos(x, rede));
-      var feito = el("button", { type: "button", class: "principal",
-        text: p[rede.k] ? "Desmarcar: não postei no " + rede.nome : "Marquei: postei no " + rede.nome });
-      feito.addEventListener("click", function () { marcar(x, rede.k, !p[rede.k]); });
-      corpo.appendChild(el("div", { class: "rodape" }, [feito, botaoDescartar(x)]));
+  function painel(x) {
+    var c = x.c, corpo = el("section", { class: "painel", id: "painel", "aria-label": "Clipe selecionado" });
+    var lado = el("div", { class: "painel-lado" }, [
+      el("h2", { text: c.gancho || c.titulo_base || "" }),
+      el("p", { class: "detalhe", text: detalhe(c) }),
+      c.aviso ? el("p", { class: "alerta", text: c.aviso }) : null]);
+    if (c.asset) {
+      var baixa = el("button", { type: "button", class: "baixar", text: "Baixar vídeo" });
+      baixa.addEventListener("click", function () { baixar(baixa, c); });
+      lado.appendChild(el("div", { class: "acoes" }, [baixa,
+        el("a", { class: "abrir", href: "/_blob/" + c.asset, target: "_blank", rel: "noopener", text: "Abrir vídeo" })]));
     } else {
-      if (c.asset) {
-        var video = el("video", { class: "previa", controls: "", preload: "none", playsinline: "", src: "/_blob/" + c.asset });
-        if (c.capa) video.setAttribute("poster", "/_blob/" + c.capa);
-        corpo.appendChild(el("div", { class: "previa-caixa" }, [video, el("div", { class: "previa-lado" }, [
-          el("p", { class: "arquivo", text: c.arquivo || "" }), midia(c), botaoDescartar(x)])]));
-      } else {
-        corpo.appendChild(midia(c));
-        corpo.appendChild(botaoDescartar(x));
-      }
-      var grade = el("div", { class: "redes" });
-      REDES.forEach(function (r) {
-        grade.appendChild(el("section", { class: "rede rede-" + r.k + (p[r.k] ? " pronta" : "") }, [
-          el("h4", { text: r.nome + (p[r.k] ? " · postado" : "") }), campos(x, r)]));
-      });
-      corpo.appendChild(grade);
+      lado.appendChild(el("p", { class: "sem-video", text: "Este clipe não tem vídeo anexado." }));
     }
-    art.appendChild(corpo);
-    return art;
+    var some = el("button", { type: "button", class: "leve", text: c.descartado ? "Restaurar clipe" : "Descartar clipe" });
+    some.addEventListener("click", function () { descartar(x, !c.descartado); });
+    var fecha = el("button", { type: "button", class: "leve", text: "Fechar" });
+    fecha.addEventListener("click", function () { aberto = null; desenhar(true); });
+    lado.appendChild(el("div", { class: "acoes" }, [some, fecha]));
+
+    var video = null;
+    if (c.asset) {
+      video = el("video", { class: "previa", controls: "", preload: "none", playsinline: "", src: "/_blob/" + c.asset });
+      if (c.capa) video.setAttribute("poster", "/_blob/" + c.capa);
+    }
+    corpo.appendChild(el("div", { class: "painel-topo" }, [video, lado]));
+
+    var redes = el("div", { class: "redes" });
+    REDES.filter(function (r) { return ver.rede === "todas" || r.k === ver.rede; }).forEach(function (r) {
+      redes.appendChild(el("section", { class: "rede rede-" + r.k }, [
+        el("h3", { text: r.nome }), campos(x, r), botaoRede(x, r)]));
+    });
+    corpo.appendChild(redes);
+    return corpo;
   }
 
-  var TEXTO_FAIXA = {
-    agora: ["Nada para postar agora.", "para postar: atrasados e os de hoje, do mais antigo para o mais novo."],
-    proximos: ["Nada agendado para os próximos dias.", "agendados para os próximos dias."],
-    feitos: ["Nenhum corte marcado como postado ainda.", "já postados."],
-    descartados: ["Nenhum corte descartado.", "descartados. Eles não entram em nenhuma lista e podem ser restaurados."]
+  function ficha(x) {
+    var c = x.c, p = c.postado || {};
+    var selos = el("span", { class: "selos" });
+    REDES.forEach(function (r) {
+      selos.appendChild(el("span", { class: "selo selo-" + r.k + (p[r.k] ? " on" : ""), text: r.curto,
+        title: r.nome + (p[r.k] ? ": postado" : ": não postado") }));
+    });
+    var capa = c.capa ? el("img", { class: "capa", src: "/_blob/" + c.capa, alt: "", loading: "lazy" }) : el("span", { class: "capa" });
+    var b = el("button", { type: "button", class: "ficha" + (aberto === x.id ? " aberta" : ""), id: "c-" + x.id,
+      "aria-expanded": aberto === x.id ? "true" : "false" }, [
+      capa,
+      el("span", { class: "ficha-gancho", text: c.gancho || c.titulo_base || "" }),
+      el("span", { class: "ficha-nome", text: (c.nome || "") + (c.duracao_s ? " · " + c.duracao_s + "s" : "") }),
+      selos]);
+    b.addEventListener("click", function () {
+      aberto = aberto === x.id ? null : x.id;
+      desenhar(true);
+      var alvo = document.getElementById(aberto ? "painel" : "c-" + x.id);
+      if (alvo && alvo.scrollIntoView) alvo.scrollIntoView({ block: "nearest" });
+    });
+    return b;
+  }
+
+  var TEXTO = {
+    livres: ["Nenhum clipe disponível com esse filtro.", "ainda não postados"],
+    feitos: ["Nenhum clipe postado com esse filtro.", "já postados"],
+    descartados: ["Nenhum clipe descartado.", "descartados (dá para restaurar)"]
   };
 
   function desenhar(forcar) {
-    var hoje = diaDe(new Date()), amanha = diaDe(new Date(Date.now() + 864e5));
-    docs.forEach(function (x) { x.dia = diaDe(new Date(x.c.postar_em)); });
-    var chave = JSON.stringify([hoje, ver, abertos, docs.map(function (x) {
-      return [x.id, x.c.postar_em, x.c.asset, x.c.postado, x.c.descartado];
+    var chave = JSON.stringify([ver, aberto, docs.map(function (x) {
+      return [x.id, x.c.asset, x.c.postado, x.c.descartado];
     })]);
     if (!forcar && chave === desenhado) return;
     desenhado = chave;
 
-    // contadores
+    // filtro de streamer acompanha os clipes que existem
+    var nomes = {};
+    docs.forEach(function (x) { if (x.c.nome) nomes[x.c.nome] = (nomes[x.c.nome] || 0) + 1; });
+    var lista = Object.keys(nomes).sort(function (a, b) { return a.localeCompare(b, "pt-BR"); });
+    if (selStreamer.options.length !== lista.length + 1) {
+      selStreamer.textContent = "";
+      selStreamer.appendChild(el("option", { value: "", text: "Todos" }));
+      lista.forEach(function (n) { selStreamer.appendChild(el("option", { value: n, text: n + " (" + nomes[n] + ")" })); });
+      selStreamer.value = ver.streamer;
+    }
+
+    var ativos = docs.filter(function (x) { return !x.c.descartado; });
     REDES.forEach(function (r) {
-      var n = docs.filter(function (x) { return faixaDe(x, r.k, hoje) === "agora"; }).length;
+      var n = ativos.filter(function (x) { return falta(x, r.k); }).length;
       $("n-" + r.k).textContent = n ? String(n) : "";
     });
-    var porFaixa = { agora: [], proximos: [], feitos: [], descartados: [] };
-    docs.forEach(function (x) { porFaixa[faixaDe(x, ver.rede, hoje)].push(x); });
+    var termo = semAcento(ver.busca.trim());
+    var filtrados = docs.filter(function (x) {
+      if (ver.streamer && x.c.nome !== ver.streamer) return false;
+      return !termo || semAcento((x.c.gancho || "") + " " + (x.c.titulo_base || "") + " " + (x.c.nome || "")).indexOf(termo) >= 0;
+    });
+    var porFaixa = { livres: [], feitos: [], descartados: [] };
+    filtrados.forEach(function (x) { porFaixa[faixaDe(x, ver.rede)].push(x); });
     FAIXAS.forEach(function (f) { $("n-" + f).textContent = porFaixa[f].length ? String(porFaixa[f].length) : ""; });
     controles.querySelectorAll(".seg").forEach(function (b) {
       var ativo = b.dataset.rede ? b.dataset.rede === ver.rede : b.dataset.faixa === ver.faixa;
@@ -235,20 +236,31 @@
       b.setAttribute("aria-pressed", ativo ? "true" : "false");
     });
 
-    var itens = porFaixa[ver.faixa].slice();
-    if (ver.faixa === "feitos" || ver.faixa === "descartados") itens.reverse();
-    lista.textContent = "";
-    itens.forEach(function (x) { lista.appendChild(linha(x, hoje, amanha)); });
+    var itens = porFaixa[ver.faixa].slice().sort(function (a, b) {
+      if (ver.ordem === "vistos") return (b.c.views || 0) - (a.c.views || 0);
+      if (ver.ordem === "curtos") return (a.c.duracao_s || 999) - (b.c.duracao_s || 999);
+      return (b.c.criado_em || "") < (a.c.criado_em || "") ? -1 : (b.c.criado_em || "") > (a.c.criado_em || "") ? 1 : 0;
+    });
+    if (aberto && !itens.some(function (x) { return x.id === aberto; })) aberto = null;
+    grade.textContent = "";
+    itens.forEach(function (x) {
+      grade.appendChild(ficha(x));
+      if (aberto === x.id) grade.appendChild(painel(x));
+    });
 
-    var nomeRede = ver.rede === "todas" ? "" : " no " + REDES.filter(function (r) { return r.k === ver.rede; })[0].nome;
+    var todosPostados = ativos.filter(function (x) { return !falta(x, "todas"); }).length;
+    resumo.textContent = docs.length
+      ? ativos.length + " clipes prontos · " + (ativos.length - todosPostados) + " com rede faltando · " + todosPostados + " postados nas três redes"
+      : "";
+    var onde = ver.rede === "todas" ? "" : " no " + REDES.filter(function (r) { return r.k === ver.rede; })[0].nome;
     explica.hidden = false;
     explica.textContent = itens.length
-      ? itens.length + (itens.length === 1 ? " corte" : " cortes") + nomeRede + " " + TEXTO_FAIXA[ver.faixa][1]
-      : TEXTO_FAIXA[ver.faixa][0];
+      ? itens.length + (itens.length === 1 ? " clipe " : " clipes ") + TEXTO[ver.faixa][1] + onde + ". Toque num clipe para ver o vídeo e os textos."
+      : TEXTO[ver.faixa][0];
     controles.hidden = !docs.length;
     if (!docs.length) {
       explica.hidden = true;
-      avisar("Nenhum corte na pauta ainda. Os cortes de cada rodada aparecem aqui, com o vídeo para baixar e os textos de cada rede.");
+      avisar("A biblioteca está vazia. Os clipes de cada rodada aparecem aqui, com o vídeo para baixar e os textos de cada rede.");
     } else {
       avisar("");
     }
@@ -259,37 +271,43 @@
     if (!b) return;
     if (b.dataset.rede) ver.rede = b.dataset.rede;
     if (b.dataset.faixa) ver.faixa = b.dataset.faixa;
-    try { localStorage.setItem("pauta-ver", JSON.stringify(ver)); } catch (e) {}
+    lembrar();
     desenhar(true);
+  });
+  selOrdem.addEventListener("change", function () { ver.ordem = selOrdem.value; lembrar(); desenhar(true); });
+  selStreamer.addEventListener("change", function () { ver.streamer = selStreamer.value; desenhar(true); });
+  var espera = null;
+  busca.addEventListener("input", function () {
+    clearTimeout(espera);
+    espera = setTimeout(function () { ver.busca = busca.value; desenhar(true); }, 150);
   });
 
   function receber(snap) {
     clearTimeout(relogio);
     docs = snap.docs.filter(function (d) { return d.exists; })
       .map(function (d) { return { id: d.id, c: JSON.parse(JSON.stringify(d.data())) }; })
-      .filter(function (x) { return x.c && x.c.postar_em && x.c.redes; })
-      .sort(function (a, b) { return a.c.postar_em < b.c.postar_em ? -1 : a.c.postar_em > b.c.postar_em ? 1 : 0; });
+      .filter(function (x) { return x.c && x.c.redes; });
     desenhar(false);
   }
 
   var relogio = setTimeout(function () {
-    avisar("Ainda não consegui carregar os cortes. A página continua tentando.");
+    avisar("Ainda não consegui carregar os clipes. A página continua tentando.");
   }, 10000);
   if (!window.claude || !window.claude.use) {
     clearTimeout(relogio);
-    avisar("Os cortes aparecem quando esta página é aberta pelo link do Claude.");
+    avisar("Os clipes aparecem quando esta página é aberta pelo link do Claude.");
     return;
   }
   window.claude.use("db").then(function (base) {
     if (!base) {
       clearTimeout(relogio);
-      avisar("Não foi possível abrir o banco de cortes nesta visualização. Abra a página pelo link do Claude, com a sua conta.");
+      avisar("Não foi possível abrir a biblioteca nesta visualização. Abra a página pelo link do Claude, com a sua conta.");
       return;
     }
     db = base;
-    db.collection("cortes").limit(500).onSnapshot(receber, function (e) {
+    db.collection("cortes").limit(1000).onSnapshot(receber, function (e) {
       clearTimeout(relogio);
-      avisar("Não foi possível ler os cortes agora (" + ((e && e.code) || "erro") + "). Recarregue a página em instantes.");
+      avisar("Não foi possível ler os clipes agora (" + ((e && e.code) || "erro") + "). Recarregue a página em instantes.");
     });
   });
 })();

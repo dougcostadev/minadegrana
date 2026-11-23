@@ -152,7 +152,7 @@ def rodar(canais="canais.txt", processados="processados.txt", max_videos=1, quan
 
 
 def montar_fila(canais="canais.txt", processados="processados.txt", por_canal=4, periodo="ambos",
-                total=40):
+                total=40, min_dia=80, min_semana=500):
     """Clipes em alta ainda não usados, intercalando os streamers (para não postar só um).
 
     `periodo`: "dia" (só as últimas 24h, o conteúdo fresco), "semana" ou "ambos" (dia primeiro).
@@ -169,7 +169,7 @@ def montar_fila(canais="canais.txt", processados="processados.txt", por_canal=4,
         for per in periodos:
             try:
                 # clipe de hoje ainda teve pouco tempo para juntar views: o corte é bem mais baixo
-                for x in clipes.em_alta(c, per, min_views=80 if per == "dia" else 500):
+                for x in clipes.em_alta(c, per, limite=40, min_views=min_dia if per == "dia" else min_semana):
                     x["fresco"] = per == "dia"
                     achados.setdefault(x["id"], x)
             except Exception as erro:

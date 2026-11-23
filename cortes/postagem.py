@@ -85,6 +85,20 @@ def horarios_ocupados(pasta):
     return ocupados
 
 
+def intercalar(metas):
+    """Ordem para apresentar um lote: alterna os streamers, cada um começando pelo clipe mais visto."""
+    por_canal = {}
+    for m in sorted(metas, key=lambda m: m.get("views_do_clipe", 0), reverse=True):
+        por_canal.setdefault(m.get("nome") or m["canal_original"], []).append(m)
+    filas = sorted(por_canal.values(), key=lambda f: f[0].get("views_do_clipe", 0), reverse=True)
+    ordem = []
+    while any(filas):
+        for f in filas:
+            if f:
+                ordem.append(f.pop(0))
+    return ordem
+
+
 def agendar(metas, agora=None, rodada=False, ocupados=(), horarios=None):
     """Ordena intercalando os streamers (os mais vistos primeiro) e dá um horário a cada corte.
 
@@ -173,12 +187,11 @@ GUIA = [
 
 
 def escrever_md(ordem, caminho):
-    linhas = ["# Pauta de postagem — Leonida Clipes", "",
-              f"{len(ordem)} cortes, na ordem sugerida. Mesmo horário nas três redes.", ""]
+    linhas = ["# Cortes prontos — Leonida Clipes", "", f"{len(ordem)} cortes com os textos de cada rede.", ""]
     for n, m in enumerate(ordem, 1):
         r = m["redes"]
         linhas += [
-            f"## {n:02d} · {m['nome']} · {m['postar_em_texto']}", "",
+            f"## {n:02d} · {m['nome']}" + (f" · {m['postar_em_texto']}" if m.get("postar_em_texto") else ""), "",
             f"Arquivo: `{os.path.basename(m.get('arquivo_postagem') or m['arquivo'])}`  ",
             f"Gancho na tela: {m.get('gancho') or '(sem gancho)'}", "",
             "**YouTube Shorts — título**", "", "```", r["youtube"]["titulo"], "```", "",
@@ -244,7 +257,7 @@ def linhas(saida="saida", mapa_assets=None):
             "titulo_base": m.get("titulo_base"), "legenda": m.get("legenda"), "redes": m["redes"],
             "arquivo": arquivo, "asset": asset,
             "capa": mapa_assets.get(os.path.splitext(arquivo)[0] + ".jpg"),
-            "postar_em": m["postar_em"], "postar_em_texto": m["postar_em_texto"],
+            "postar_em": m.get("postar_em"), "postar_em_texto": m.get("postar_em_texto"),
             "views": m.get("views_do_clipe"), "duracao_s": m.get("duracao_s"),
             "link_original": m.get("link_original"), "aviso": m.get("aviso"),
             "criado_em": datetime.now(FUSO).isoformat(timespec="seconds"),
@@ -268,11 +281,15 @@ def linhas(saida="saida", mapa_assets=None):
     return writes, faltando
 
 
-def pacote(saida="saida", rodada=False, agora=None, ocupados=(), todos=False, horarios=None, ordem_ids=None):
-    """Fecha o lote: agenda, vídeos numerados em saida/postar/, POSTAR.md e agenda.json.
+def pacote(saida="saida", rodada=False, agora=None, ocupados=(), todos=False, horarios=None, ordem_ids=None,
+           agendado=False):
+    """Fecha o lote: vídeos e capas em saida/postar/, POSTAR.md e agenda.json.
 
-    Depois de subir os vídeos como anexos da pauta, `linhas()` gera os documentos do banco.
+    Padrão (biblioteca): sem horário; quem posta decide quando e onde. Com `agendado`, `rodada`
+    ou `horarios`, cada corte recebe um horário sugerido e os arquivos saem numerados.
+    Depois de subir os vídeos como anexos da página, `linhas()` gera os documentos do banco.
     """
+    com_horario = agendado or rodada or bool(horarios)
     metas = carregar(saida, incluir_publicados=todos)
     from . import render
     for m in metas:  # garante que todo vídeo cabe como anexo da pauta
@@ -285,8 +302,10 @@ def pacote(saida="saida", rodada=False, agora=None, ocupados=(), todos=False, ho
             m["postar_em"] = quando.isoformat()
             m["postar_em_texto"] = f"{DIAS[quando.weekday()]} {quando:%d/%m} às {quando:%H:%M}"
         ordem = metas[:len(horarios or [])]
-    else:
+    elif com_horario:
         ordem = agendar(metas, agora, rodada, ocupados, horarios)
+    else:
+        ordem = intercalar(metas)
     if not ordem:
         return []
     # cópias numeradas na ordem de postagem, para não haver dúvida de qual vídeo é qual
@@ -295,7 +314,8 @@ def pacote(saida="saida", rodada=False, agora=None, ocupados=(), todos=False, ho
     for antigo in glob.glob(os.path.join(pasta, "*.mp4")) + glob.glob(os.path.join(pasta, "*.jpg")):
         os.remove(antigo)
     for n, m in enumerate(ordem, 1):
-        m["arquivo_postagem"] = os.path.join(pasta, f"{n:02d}-{os.path.basename(m['arquivo'])}")
+        prefixo = f"{n:02d}-" if com_horario else ""  # na biblioteca o nome do arquivo não muda
+        m["arquivo_postagem"] = os.path.join(pasta, prefixo + os.path.basename(m["arquivo"]))
         shutil.copyfile(m["arquivo"], m["arquivo_postagem"])  # cópia de verdade: o upload recusa hard link
         _capa(m["arquivo"], os.path.splitext(m["arquivo_postagem"])[0] + ".jpg")
     escrever_md(ordem, os.path.join(saida, "POSTAR.md"))
