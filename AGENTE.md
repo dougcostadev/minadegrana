@@ -11,11 +11,18 @@ A biblioteca é uma página que lê tudo do banco de dados dela mesma. Sua rodad
 cortes novos estão lá dentro, com o vídeo anexado e os textos de cada rede. **Não existe
 agenda:** nenhum corte recebe dia ou horário.
 
-**Objetivo de cada rodada:** acrescentar **2 cortes** à biblioteca, de preferência com o que
-viralizou nas últimas 24 horas e de streamers diferentes. As duas preferências cedem quando
-faltar material: se só um streamer tiver clipes bons, saem dois cortes dele; se o dia render
-menos de 2, complete com clipes da semana. Só entregue menos de 2 se nem assim houver clipe
-que preste. Trabalhe sozinho até o fim; não pergunte nada.
+**Objetivo de cada rodada:** colocar na biblioteca **todos os clipes virais que passarem na
+avaliação**. Não existe meta nem teto para o tamanho da biblioteca: enquanto aparecer conteúdo
+viral novo, a produção continua, rodada após rodada. Os limites são só os de uma rodada:
+
+- até **24 prévias** avaliadas;
+- até **8 cortes** montados (o que sobrar fica na fila para a próxima rodada);
+- o espaço livre da biblioteca (passo 2).
+
+Comece pelo que viralizou nas últimas 24 horas. Se o dia render menos de 2 cortes, ou se ainda
+sobrar orçamento de prévias e de cortes, continue com os clipes mais vistos da semana. Varie os
+streamers quando der. Quantidade não é meta: clipe fraco não entra para fazer número, e uma
+rodada sem nada bom termina com zero cortes. Trabalhe sozinho até o fim; não pergunte nada.
 
 ## 1. Preparar
 
@@ -28,13 +35,37 @@ O `ffmpeg` precisa existir. Se a ferramenta `ArtifactData` não estiver na sua l
 com ToolSearch (`select:ArtifactData`). Se algo do código estiver quebrado, faça a correção
 mínima e siga.
 
-## 2. Trazer a lista de clipes já usados
+## 2. Trazer a lista de clipes já usados e liberar espaço
 
 A lista mora no banco da biblioteca, não no git.
 
 1. `ArtifactData` com `action: "get"`, `url: BIBLIOTECA`, `collection: "estado"`, `doc_id: "usados"`,
    `out_dir: "<caminho absoluto>/trabalho/db"`. **Anote a `version`** que o resultado mostra.
 2. `python -m cortes estado carregar trabalho/db/estado/usados.json`
+
+**Liberar espaço.** A biblioteca guarda até 1 GB de anexos. O dono do canal autorizou apagar o
+**vídeo** dos clipes que ele já marcou como postados **nas três redes** (YouTube, TikTok e
+Instagram). Só desses clipes, e só o vídeo: capa, textos e marcações ficam.
+
+3. `ArtifactData` com `action: "list"`, `url: BIBLIOTECA`, `collection: "cortes"`,
+   `query: {"limit": 500}`, `out_dir: "<caminho absoluto>/trabalho/db"`. O resultado mostra a
+   `version` de cada documento.
+4. `python -m cortes limpeza trabalho/db/cortes` — diz quantos clipes estão disponíveis e lista
+   os documentos já postados nas três redes que ainda têm vídeo, com o id do anexo de cada um.
+   Se não listar nenhum, pule para o item 7.
+5. `ArtifactData` com `action: "batch"`, `url: BIBLIOTECA` e um `update` por documento listado
+   (até 50 por chamada): `data` igual a `{"asset": {"__delete__": true}, "video_removido": "<data de hoje>"}`
+   e `if_version` igual à versão que a listagem do item 3 mostrou. Se a gravação falhar porque
+   uma versão mudou, liste de novo e refaça.
+6. Para cada anexo que o comando listou, ferramenta `Artifact` com `action: "delete"`,
+   `url: BIBLIOTECA` e `path: "<id do anexo>"`. Apague **somente** esses ids. Nunca apague capa,
+   vídeo de clipe disponível ou descartado, documento, nem a página. Se uma exclusão for
+   recusada, não insista nem procure outro caminho: pare de apagar e conte no resumo.
+7. Ferramenta `Artifact` com `action: "list"`, `scope: "assets"`, `url: BIBLIOTECA`. A primeira
+   linha diz `X of 1073741824 bytes used`. Cada corte ocupa até 21 MB (vídeo e capa), então cabem
+   `(1073741824 − X) ÷ 21000000` cortes, arredondando para baixo. Esse número limita a rodada,
+   junto com o teto de 8. Se não couber nenhum, não avalie nem monte nada: vá direto ao passo 8
+   e avise no resumo que a biblioteca está cheia e que é preciso postar ou descartar clipes.
 
 ## 3. Montar a fila do dia
 
@@ -43,11 +74,12 @@ python -m cortes fila --periodo dia
 ```
 
 Lista os clipes das últimas 24h ainda não usados, intercalando os canais de `canais.txt`.
-Se a avaliação do dia render menos de 2 cortes, rode de novo com `--periodo semana` (em outro
-arquivo: `--saida fila-semana.json`, e passe `--fila fila-semana.json` nos comandos seguintes)
-e complete a partir dela.
+Avalie essa fila primeiro. Se ela render menos de 2 cortes, ou se acabar e ainda sobrar
+orçamento de prévias e de cortes, rode de novo com `--periodo semana` (em outro arquivo:
+`--saida fila-semana.json`, e passe `--fila fila-semana.json` nos comandos seguintes) e
+continue a partir dela.
 
-## 4. Avaliar (no máximo 12 prévias por rodada)
+## 4. Avaliar (no máximo 24 prévias por rodada)
 
 ```bash
 python -m cortes previa N     # imprime o caminho de uma folha com 10 quadros do clipe
@@ -137,13 +169,15 @@ automaticamente.
 
 1. Ferramenta `Artifact`, `action: "read"`, `url: BIBLIOTECA` (uma vez por sessão).
 2. Ferramenta `Artifact` com `url: BIBLIOTECA`, `asset: true` e `file_paths` com o caminho
-   absoluto de **todos** os `.mp4` e `.jpg` de `saida/postar/`. O resultado dá um `id` para cada arquivo.
+   absoluto de **todos** os `.mp4` e `.jpg` de `saida/postar/` (no máximo 25 arquivos por
+   chamada; divida se passar disso). O resultado dá um `id` para cada arquivo.
 3. Grave `saida/assets.json` no formato `{"nome.mp4": "<id>", "nome.jpg": "<id>", ...}`.
 4. `python -m cortes linhas saida/assets.json` — gera um documento por corte e `saida/lote.json`.
 5. `ArtifactData` com `action: "batch"`, `url: BIBLIOTECA` e `writes` igual ao conteúdo de
    `saida/lote.json` (as entradas já apontam para os arquivos com `file_path`).
 
-Nunca republique a página, nunca apague anexos nem documentos da biblioteca.
+Nunca republique a página nem apague documentos da biblioteca. De anexos, só se apagam os
+vídeos listados na limpeza do passo 2.
 Se o upload dos anexos for recusado (por exemplo, por falta de espaço), rode
 `python -m cortes linhas` sem o mapa, grave os documentos assim mesmo, envie os `.mp4` ao
 usuário como arquivos e diga isso no resumo.
@@ -159,5 +193,6 @@ Sempre, mesmo quando nenhum corte saiu (os descartados também contam):
 ## 9. Resumo final
 
 Em poucas linhas: quais cortes entraram na biblioteca, de quais streamers, com que ressalvas
-(palavrão no áudio, censura, cam), o que foi descartado e por quê, e qualquer problema.
+(palavrão no áudio, censura, cam), o que foi descartado e por quê, quantos vídeos de clipes já
+postados foram apagados, quanto espaço resta e qualquer problema.
 Termine com o link da BIBLIOTECA. Se nada prestou, não force: diga isso.

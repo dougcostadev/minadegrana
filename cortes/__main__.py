@@ -66,6 +66,8 @@ def main():
     li = sub.add_parser("linhas", help="gera os documentos do banco da pauta a partir do mapa de anexos")
     li.add_argument("assets", nargs="?", help="JSON {arquivo numerado: id do anexo}")
     sub.add_parser("pagina", help="monta saida/pauta.html (a página da pauta, lida do banco)")
+    lp = sub.add_parser("limpeza", help="lista os vídeos de clipes já postados nas três redes, que podem ser apagados")
+    lp.add_argument("pasta", help="pasta com os documentos da coleção `cortes` baixados do banco")
     es = sub.add_parser("estado", help="leva e traz a lista de clipes já usados do banco da pauta")
     es.add_argument("acao", choices=["carregar", "exportar"])
     es.add_argument("arquivo", nargs="?", default="saida/estado.json")
@@ -145,6 +147,18 @@ def main():
         print(f"{len(writes)} documento(s) em saida/linhas/ e a lista de gravações em saida/lote.json")
         if faltando:
             print("SEM ANEXO (o botão de baixar não vai funcionar):", ", ".join(faltando))
+        return
+    if a.cmd == "limpeza":
+        from . import postagem
+        apagar, disponiveis = postagem.limpeza(a.pasta)
+        from datetime import datetime
+        hoje = datetime.now(postagem.FUSO).strftime("%Y-%m-%d")
+        print(f"Clipes disponíveis para postar: {disponiveis}")
+        print(f"Vídeos de clipes já postados nas três redes: {len(apagar)}")
+        for doc, asset in apagar:
+            print(f"  doc {doc}  anexo {asset}")
+        if apagar:
+            print('Em cada doc, grave (update, com if_version): {"asset": {"__delete__": true}, "video_removido": "%s"}' % hoje)
         return
     if a.cmd == "pagina":
         from . import postagem

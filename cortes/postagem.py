@@ -229,6 +229,27 @@ def pagina(destino="saida/pauta.html"):
     return destino
 
 
+def limpeza(pasta):
+    """Lê os documentos da biblioteca salvos em `pasta` (coleção `cortes`).
+
+    Devolve ([(doc_id, id do anexo de vídeo)], disponíveis): os clipes já postados nas três
+    redes que ainda guardam o vídeo, e quantos clipes seguem disponíveis para postar.
+    """
+    apagar, disponiveis = [], 0
+    for arq in sorted(glob.glob(os.path.join(pasta, "*.json"))):
+        with open(arq, encoding="utf-8") as f:
+            d = json.load(f)
+        if not isinstance(d, dict):
+            continue
+        postado = d.get("postado") or {}
+        if all(postado.get(k) is True for k in ("yt", "tt", "ig")):
+            if d.get("asset"):
+                apagar.append((os.path.basename(arq)[:-5], d["asset"]))
+        elif not d.get("descartado"):
+            disponiveis += 1
+    return apagar, disponiveis
+
+
 def _doc_id(m):
     return re.sub(r"[^A-Za-z0-9_-]", "", str(m.get("id") or os.path.basename(m["arquivo"])))[-40:]
 
