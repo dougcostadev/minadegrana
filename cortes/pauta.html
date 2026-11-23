@@ -8,27 +8,28 @@
 <header class="topo">
   <p class="marca">Leonida Clipes</p>
   <h1>Pauta de postagem</h1>
-  <p class="sub">Os cortes de cada rodada entram aqui sozinhos, com o vídeo para baixar e o texto pronto para YouTube Shorts, TikTok e Instagram Reels. Poste no horário indicado e marque o que já foi.</p>
 </header>
 <p id="aviso" class="aviso" role="status">Carregando os cortes…</p>
-<section class="bloco" aria-labelledby="h-agenda" id="sec-agenda" hidden>
-  <h2 id="h-agenda">Agenda</h2>
-  <ol class="agenda" id="agenda"></ol>
-</section>
-<div id="cortes" class="dias"></div>
-<section class="bloco" aria-labelledby="h-pendentes" id="sec-pendentes" hidden>
-  <h2 id="h-pendentes">Ficaram sem postar</h2>
-  <p class="sub">Cortes de dias anteriores que ainda têm alguma rede sem marcar. Dá para postar hoje.</p>
-  <div id="pendentes" class="dia"></div>
-</section>
-<details class="bloco anteriores" id="anteriores" hidden>
-  <summary>Dias anteriores <span id="n-anteriores" class="conta"></span></summary>
-  <div id="cortes-antigos" class="dias"></div>
-</details>
-<section class="bloco guia" aria-labelledby="h-guia">
-  <h2 id="h-guia">Como postar</h2>
+<nav class="controles" id="controles" aria-label="Filtros da pauta" hidden>
+  <div class="grupo" role="group" aria-label="Rede">
+    <button type="button" class="seg" data-rede="todas">Todas</button>
+    <button type="button" class="seg seg-yt" data-rede="yt">YouTube <span class="n" id="n-yt"></span></button>
+    <button type="button" class="seg seg-tt" data-rede="tt">TikTok <span class="n" id="n-tt"></span></button>
+    <button type="button" class="seg seg-ig" data-rede="ig">Instagram <span class="n" id="n-ig"></span></button>
+  </div>
+  <div class="grupo" role="group" aria-label="Situação">
+    <button type="button" class="seg" data-faixa="agora">Para postar <span class="n" id="n-agora"></span></button>
+    <button type="button" class="seg" data-faixa="proximos">Próximos dias <span class="n" id="n-proximos"></span></button>
+    <button type="button" class="seg" data-faixa="feitos">Feitos <span class="n" id="n-feitos"></span></button>
+    <button type="button" class="seg" data-faixa="descartados">Descartados <span class="n" id="n-descartados"></span></button>
+  </div>
+</nav>
+<p id="explica" class="explica" hidden></p>
+<div id="lista" class="lista"></div>
+<details class="guia">
+  <summary>Como postar em cada rede</summary>
   <div class="guia-grade"><!--GUIA--></div>
-</section>
+</details>
 </div>
 <script>
 /*JS*/

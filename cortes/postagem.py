@@ -76,7 +76,8 @@ def horarios_ocupados(pasta):
     for caminho in glob.glob(os.path.join(pasta, "*.json")):
         try:
             with open(caminho, encoding="utf-8") as f:
-                quando = json.load(f).get("postar_em")
+                doc = json.load(f)
+            quando = None if doc.get("descartado") else doc.get("postar_em")  # descartado libera o horário
             if quando:
                 ocupados.add(datetime.fromisoformat(quando).astimezone(FUSO).replace(second=0, microsecond=0))
         except (ValueError, OSError, AttributeError):

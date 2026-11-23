@@ -2,15 +2,20 @@
   "use strict";
   var FUSO = "America/Sao_Paulo";
   var REDES = [
-    { k: "yt", nome: "YouTube Shorts", campos: function (r) { return [["Título", r.youtube.titulo], ["Descrição", r.youtube.descricao], ["Tags", r.youtube.tags]]; } },
-    { k: "tt", nome: "TikTok", campos: function (r) { return [["Legenda", r.tiktok]]; } },
-    { k: "ig", nome: "Instagram Reels", campos: function (r) { return [["Legenda", r.instagram]]; } }
+    { k: "yt", curto: "YT", nome: "YouTube", campos: function (r) { return [["Título", r.youtube.titulo], ["Descrição", r.youtube.descricao], ["Tags", r.youtube.tags]]; } },
+    { k: "tt", curto: "TT", nome: "TikTok", campos: function (r) { return [["Legenda", r.tiktok]]; } },
+    { k: "ig", curto: "IG", nome: "Instagram", campos: function (r) { return [["Legenda", r.instagram]]; } }
   ];
+  var FAIXAS = ["agora", "proximos", "feitos", "descartados"];
   var $ = function (id) { return document.getElementById(id); };
-  var aviso = $("aviso"), secAgenda = $("sec-agenda"), agenda = $("agenda"), atuais = $("cortes"),
-      antigosBox = $("anteriores"), antigos = $("cortes-antigos"), nAntigos = $("n-anteriores"),
-      secPend = $("sec-pendentes"), pend = $("pendentes");
-  var db = null, assinatura = null, caixas = {}, contadores = {}, gravando = {};
+  var aviso = $("aviso"), controles = $("controles"), explica = $("explica"), lista = $("lista");
+  var db = null, docs = [], abertos = {}, desenhado = null, gravando = {};
+  var ver = { rede: "todas", faixa: "agora" };
+  try {
+    var salvo = JSON.parse(localStorage.getItem("pauta-ver") || "{}");
+    if (salvo.rede === "todas" || REDES.some(function (r) { return r.k === salvo.rede; })) ver.rede = salvo.rede;
+    if (FAIXAS.indexOf(salvo.faixa) >= 0) ver.faixa = salvo.faixa;
+  } catch (e) {}
 
   function el(tag, props, filhos) {
     var n = document.createElement(tag), k;
@@ -22,24 +27,57 @@
     (filhos || []).forEach(function (f) { if (f) n.appendChild(f); });
     return n;
   }
-  function fmt(opcoes) {
-    opcoes.timeZone = FUSO;
-    return new Intl.DateTimeFormat("pt-BR", opcoes);
-  }
+  function fmt(opcoes) { opcoes.timeZone = FUSO; return new Intl.DateTimeFormat("pt-BR", opcoes); }
   function diaDe(d) { // AAAA-MM-DD no fuso de Brasília
     var o = {};
     fmt({ year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(d)
       .forEach(function (x) { o[x.type] = x.value; });
     return o.year + "-" + o.month + "-" + o.day;
   }
-  function rotuloDia(dia, hoje, amanha) {
-    var txt = fmt({ weekday: "long", day: "2-digit", month: "2-digit" }).format(new Date(dia + "T12:00:00-03:00"));
-    if (dia === hoje) return "Hoje, " + txt;
-    if (dia === amanha) return "Amanhã, " + txt;
-    return txt.charAt(0).toUpperCase() + txt.slice(1);
-  }
   function hora(iso) { return fmt({ hour: "2-digit", minute: "2-digit" }).format(new Date(iso)); }
+  function quando(x, hoje, amanha) {
+    var h = hora(x.c.postar_em);
+    if (x.dia === hoje) return "hoje " + h;
+    if (x.dia === amanha) return "amanhã " + h;
+    var sem = fmt({ weekday: "short" }).format(new Date(x.dia + "T12:00:00-03:00")).replace(".", "");
+    return sem + " " + x.dia.slice(8) + "/" + x.dia.slice(5, 7) + " " + h;
+  }
   function avisar(texto) { aviso.textContent = texto; aviso.hidden = !texto; }
+
+  function pendente(x, rede) {
+    var p = x.c.postado || {};
+    return rede === "todas" ? !(p.yt && p.tt && p.ig) : !p[rede];
+  }
+  function faixaDe(x, rede, hoje) {
+    if (x.c.descartado) return "descartados";
+    if (!pendente(x, rede)) return "feitos";
+    return x.dia <= hoje ? "agora" : "proximos";
+  }
+
+  function gravar(x, patch, desfazer) {
+    if (!db) return;
+    gravando[x.id] = (gravando[x.id] || Promise.resolve()).then(function () {
+      return db.doc("cortes/" + x.id).update(patch);   // uma gravação por vez em cada documento
+    }).then(null, function () {
+      desfazer();
+      desenhar(true);
+      avisar("Não consegui salvar a alteração. Tente de novo em instantes.");
+    });
+  }
+  function marcar(x, rede, valor) {
+    x.c.postado = x.c.postado || {};
+    var antes = !!x.c.postado[rede], patch = { postado: {} };
+    x.c.postado[rede] = valor;
+    patch.postado[rede] = valor;
+    desenhar(true);
+    gravar(x, patch, function () { x.c.postado[rede] = antes; });
+  }
+  function descartar(x, valor) {
+    var antes = !!x.c.descartado;
+    x.c.descartado = valor;
+    desenhar(true);
+    gravar(x, { descartado: valor }, function () { x.c.descartado = antes; });
+  }
 
   function copiar(botao, alvo) {
     var feito = function (texto) {
@@ -61,7 +99,6 @@
       reserva();
     }
   }
-
   function baixar(botao, c) {
     var voltar = function (texto) {
       botao.textContent = texto;
@@ -82,150 +119,157 @@
     });
   }
 
-  function contar(id) {
-    var n = REDES.filter(function (r) { return caixas[id][r.k].checked; }).length;
-    (contadores[id] || []).forEach(function (s) {
-      s.textContent = n === 3 ? "postado" : n + "/3";
-      s.classList.toggle("ok", n === 3);
+  function campos(x, rede) {
+    var caixa = el("div", { class: "campos" });
+    rede.campos(x.c.redes).forEach(function (par, i) {
+      var pre = el("pre", { class: "texto", tabindex: "0", id: "t-" + x.id + "-" + rede.k + "-" + i, text: par[1] });
+      var botao = el("button", { type: "button", class: "copiar", text: "Copiar" });
+      botao.addEventListener("click", function () { copiar(botao, pre); });
+      caixa.appendChild(el("div", { class: "campo" }, [
+        el("div", { class: "campo-topo" }, [el("span", { class: "rotulo", text: par[0] }), botao]), pre]));
     });
+    return caixa;
+  }
+  function midia(c) {
+    if (!c.asset) return el("p", { class: "sem-video", text: "Vídeo não anexado: use o arquivo enviado na conversa." });
+    var botao = el("button", { type: "button", class: "baixar", text: "Baixar vídeo" });
+    botao.addEventListener("click", function () { baixar(botao, c); });
+    return el("div", { class: "acoes" }, [botao,
+      el("a", { class: "abrir", href: "/_blob/" + c.asset, target: "_blank", rel: "noopener", text: "Abrir vídeo" })]);
+  }
+  function capa(c, classe) {
+    return c.capa ? el("img", { class: classe, src: "/_blob/" + c.capa, alt: "", loading: "lazy" }) : el("div", { class: classe });
+  }
+  function botaoDescartar(x) {
+    var b = el("button", { type: "button", class: "leve", text: x.c.descartado ? "Restaurar corte" : "Descartar corte" });
+    b.addEventListener("click", function () { descartar(x, !x.c.descartado); });
+    return b;
   }
 
-  function marcar(id, rede, caixa) {
-    caixa.closest(".rede").classList.toggle("pronta", caixa.checked);
-    contar(id);
-    if (!db) return;
-    var valor = caixa.checked, patch = { postado: {} };
-    patch.postado[rede] = valor;
-    // uma gravação por vez em cada documento
-    gravando[id] = (gravando[id] || Promise.resolve()).then(function () {
-      return db.doc("cortes/" + id).update(patch);
-    }).then(null, function () {
-      caixa.checked = !valor;
-      caixa.closest(".rede").classList.toggle("pronta", caixa.checked);
-      contar(id);
-      avisar("Não consegui salvar a marcação. Tente de novo em instantes.");
+  function linha(x, hoje, amanha) {
+    var c = x.c, p = c.postado || {}, atrasado = x.dia < hoje && !c.descartado && pendente(x, ver.rede);
+    var chips = el("div", { class: "chips" });
+    REDES.forEach(function (r) {
+      var chip = el("button", { type: "button", class: "chip chip-" + r.k + (p[r.k] ? " on" : ""),
+        "aria-pressed": p[r.k] ? "true" : "false",
+        "aria-label": r.nome + (p[r.k] ? ": postado" : ": falta postar"), text: r.curto });
+      chip.addEventListener("click", function (ev) { ev.stopPropagation(); marcar(x, r.k, !p[r.k]); });
+      chips.appendChild(chip);
     });
-  }
+    var topo = el("div", { class: "linha-topo" }, [
+      capa(c, "mini"),
+      el("div", { class: "linha-texto" }, [
+        el("p", { class: "quando" + (atrasado ? " atrasado" : ""), text: quando(x, hoje, amanha) + (atrasado ? " · atrasado" : "") + " · " + (c.nome || "") }),
+        el("p", { class: "gancho", text: c.gancho || c.titulo_base || "" })]),
+      chips]);
+    var art = el("article", { class: "corte", id: "c-" + x.id }, [topo]);
+    var umaRede = ver.rede !== "todas";
+    var aberto = umaRede ? ver.faixa !== "feitos" : !!abertos[x.id];
 
-  function cartao(id, c, n) {
-    caixas[id] = {};
-    var redes = el("div", { class: "redes" });
-    REDES.forEach(function (rede) {
-      var caixa = el("input", { type: "checkbox", id: "p-" + id + "-" + rede.k });
-      caixa.checked = !!(c.postado && c.postado[rede.k]);
-      caixa.addEventListener("change", function () { marcar(id, rede.k, caixa); });
-      caixas[id][rede.k] = caixa;
-      var sec = el("section", { class: "rede rede-" + rede.k + (caixa.checked ? " pronta" : "") }, [
-        el("header", {}, [el("h4", { text: rede.nome }),
-          el("label", { class: "feito" }, [caixa, document.createTextNode(" postado")])])
-      ]);
-      rede.campos(c.redes).forEach(function (par, i) {
-        var pre = el("pre", { class: "texto", tabindex: "0", id: "t-" + id + "-" + rede.k + "-" + i, text: par[1] });
-        var botao = el("button", { type: "button", class: "copiar", text: "Copiar" });
-        botao.addEventListener("click", function () { copiar(botao, pre); });
-        sec.appendChild(el("div", { class: "campo" }, [
-          el("div", { class: "campo-topo" }, [el("span", { class: "rotulo", text: par[0] }), botao]), pre]));
-      });
-      redes.appendChild(sec);
-    });
-
-    var midia, acoes;
-    if (c.asset) {
-      midia = el("video", { class: "mini", controls: "", preload: "none", playsinline: "", src: "/_blob/" + c.asset });
-      if (c.capa) midia.setAttribute("poster", "/_blob/" + c.capa);
-      var botao = el("button", { type: "button", class: "baixar", text: "Baixar vídeo" });
-      botao.addEventListener("click", function () { baixar(botao, c); });
-      acoes = el("div", { class: "acoes" }, [botao,
-        el("a", { class: "abrir", href: "/_blob/" + c.asset, target: "_blank", rel: "noopener", text: "Abrir vídeo" })]);
-    } else {
-      midia = c.capa ? el("img", { class: "mini", src: "/_blob/" + c.capa, alt: "Quadro do corte", width: "144", height: "256" })
-        : el("div", { class: "mini" });
-      acoes = el("p", { class: "sem-video", text: "Vídeo não anexado: use o arquivo enviado na conversa." });
+    if (!umaRede) {
+      var alterna = el("button", { type: "button", class: "leve abre", "aria-expanded": aberto ? "true" : "false",
+        text: aberto ? "Fechar" : "Abrir textos e vídeo" });
+      alterna.addEventListener("click", function () { abertos[x.id] = !abertos[x.id]; desenhar(true); });
+      art.appendChild(alterna);
     }
-    var item = function (rotulo, valor, classe) {
-      return el("div", {}, [el("dt", { text: rotulo }), el("dd", { text: valor, class: classe || "" })]);
-    };
-    var lista = el("dl", {}, [item("Streamer", c.nome || c.canal || ""), item("Postar", c.postar_em_texto || hora(c.postar_em)),
-      item("Arquivo", c.arquivo || "", "arquivo")]);
-    if (c.views) lista.appendChild(item("Clipe original", Number(c.views).toLocaleString("pt-BR") + " views"));
-    return el("article", { class: "corte", id: "c-" + id }, [
-      el("div", { class: "cabeca" }, [midia, el("div", { class: "resumo" }, [
-        el("p", { class: "ordem", text: n ? hora(c.postar_em) + " · corte " + n : (c.postar_em_texto || hora(c.postar_em)) }),
-        el("h3", { text: c.gancho || c.titulo_base || "" }),
-        c.aviso ? el("p", { class: "alerta", text: c.aviso }) : null, lista, acoes])]),
-      redes]);
+    if (!aberto) return art;
+
+    var corpo = el("div", { class: "corpo" });
+    if (c.aviso) corpo.appendChild(el("p", { class: "alerta", text: c.aviso }));
+    if (umaRede) {
+      var rede = REDES.filter(function (r) { return r.k === ver.rede; })[0];
+      corpo.appendChild(midia(c));
+      corpo.appendChild(campos(x, rede));
+      var feito = el("button", { type: "button", class: "principal",
+        text: p[rede.k] ? "Desmarcar: não postei no " + rede.nome : "Marquei: postei no " + rede.nome });
+      feito.addEventListener("click", function () { marcar(x, rede.k, !p[rede.k]); });
+      corpo.appendChild(el("div", { class: "rodape" }, [feito, botaoDescartar(x)]));
+    } else {
+      if (c.asset) {
+        var video = el("video", { class: "previa", controls: "", preload: "none", playsinline: "", src: "/_blob/" + c.asset });
+        if (c.capa) video.setAttribute("poster", "/_blob/" + c.capa);
+        corpo.appendChild(el("div", { class: "previa-caixa" }, [video, el("div", { class: "previa-lado" }, [
+          el("p", { class: "arquivo", text: c.arquivo || "" }), midia(c), botaoDescartar(x)])]));
+      } else {
+        corpo.appendChild(midia(c));
+        corpo.appendChild(botaoDescartar(x));
+      }
+      var grade = el("div", { class: "redes" });
+      REDES.forEach(function (r) {
+        grade.appendChild(el("section", { class: "rede rede-" + r.k + (p[r.k] ? " pronta" : "") }, [
+          el("h4", { text: r.nome + (p[r.k] ? " · postado" : "") }), campos(x, r)]));
+      });
+      corpo.appendChild(grade);
+    }
+    art.appendChild(corpo);
+    return art;
   }
 
-  function montar(docs) {
+  var TEXTO_FAIXA = {
+    agora: ["Nada para postar agora.", "para postar: atrasados e os de hoje, do mais antigo para o mais novo."],
+    proximos: ["Nada agendado para os próximos dias.", "agendados para os próximos dias."],
+    feitos: ["Nenhum corte marcado como postado ainda.", "já postados."],
+    descartados: ["Nenhum corte descartado.", "descartados. Eles não entram em nenhuma lista e podem ser restaurados."]
+  };
+
+  function desenhar(forcar) {
     var hoje = diaDe(new Date()), amanha = diaDe(new Date(Date.now() + 864e5));
-    caixas = {}; contadores = {};
-    atuais.textContent = ""; antigos.textContent = ""; agenda.textContent = ""; pend.textContent = "";
-    var grupos = {}, ordemDias = [];
-    docs.forEach(function (x) {
-      x.dia = diaDe(new Date(x.c.postar_em));
-      if (!grupos[x.dia]) { grupos[x.dia] = []; ordemDias.push(x.dia); }
-      grupos[x.dia].push(x);
+    docs.forEach(function (x) { x.dia = diaDe(new Date(x.c.postar_em)); });
+    var chave = JSON.stringify([hoje, ver, abertos, docs.map(function (x) {
+      return [x.id, x.c.postar_em, x.c.asset, x.c.postado, x.c.descartado];
+    })]);
+    if (!forcar && chave === desenhado) return;
+    desenhado = chave;
+
+    // contadores
+    REDES.forEach(function (r) {
+      var n = docs.filter(function (x) { return faixaDe(x, r.k, hoje) === "agora"; }).length;
+      $("n-" + r.k).textContent = n ? String(n) : "";
     });
-    var futuros = ordemDias.filter(function (d) { return d >= hoje; }).sort();
-    var passados = ordemDias.filter(function (d) { return d < hoje; }).sort().reverse();
-    var completo = function (x) {
-      var p = x.c.postado || {};
-      return !!(p.yt && p.tt && p.ig);
-    };
-    var secao = function (dia, itens) {
-      var s = el("section", { class: "dia" }, [el("h2", { text: rotuloDia(dia, hoje, amanha) })]);
-      itens.forEach(function (x, i) { s.appendChild(cartao(x.id, x.c, i + 1)); });
-      return s;
-    };
-    futuros.forEach(function (dia) {
-      atuais.appendChild(secao(dia, grupos[dia]));
-      grupos[dia].forEach(function (x) {
-        var status = el("span", { class: "status" });
-        (contadores[x.id] = contadores[x.id] || []).push(status);
-        var quando = (dia === hoje ? "hoje" : dia === amanha ? "amanhã" : dia.slice(8) + "/" + dia.slice(5, 7)) + " " + hora(x.c.postar_em);
-        agenda.appendChild(el("li", {}, [el("a", { href: "#c-" + x.id }, [
-          el("span", { class: "quando", text: quando }),
-          el("span", { class: "oque", text: x.c.gancho || x.c.titulo_base || "" }),
-          el("span", { class: "quem", text: x.c.nome || "" }), status])]));
-      });
+    var porFaixa = { agora: [], proximos: [], feitos: [], descartados: [] };
+    docs.forEach(function (x) { porFaixa[faixaDe(x, ver.rede, hoje)].push(x); });
+    FAIXAS.forEach(function (f) { $("n-" + f).textContent = porFaixa[f].length ? String(porFaixa[f].length) : ""; });
+    controles.querySelectorAll(".seg").forEach(function (b) {
+      var ativo = b.dataset.rede ? b.dataset.rede === ver.rede : b.dataset.faixa === ver.faixa;
+      b.classList.toggle("ativo", ativo);
+      b.setAttribute("aria-pressed", ativo ? "true" : "false");
     });
-    // dias anteriores: o que ainda tem rede sem marcar fica à vista; o que já foi todo postado vai para o arquivo
-    var atrasados = docs.filter(function (x) { return x.dia < hoje && !completo(x); }).reverse();
-    atrasados.forEach(function (x) { pend.appendChild(cartao(x.id, x.c, 0)); });
-    secPend.hidden = !atrasados.length;
-    var arquivados = 0;
-    passados.forEach(function (dia) {
-      var feitos = grupos[dia].filter(completo);
-      arquivados += feitos.length;
-      if (feitos.length) antigos.appendChild(secao(dia, feitos));
-    });
-    Object.keys(caixas).forEach(contar);
-    secAgenda.hidden = !futuros.length;
-    antigosBox.hidden = !arquivados;
-    nAntigos.textContent = arquivados ? "(" + arquivados + ")" : "";
-    if (!docs.length) avisar("Nenhum corte na pauta ainda. Os cortes de cada rodada aparecem aqui, com o vídeo para baixar e os textos de cada rede.");
-    else if (!futuros.length) avisar("Nada agendado de hoje em diante. A próxima rodada traz os cortes do dia.");
-    else avisar("");
+
+    var itens = porFaixa[ver.faixa].slice();
+    if (ver.faixa === "feitos" || ver.faixa === "descartados") itens.reverse();
+    lista.textContent = "";
+    itens.forEach(function (x) { lista.appendChild(linha(x, hoje, amanha)); });
+
+    var nomeRede = ver.rede === "todas" ? "" : " no " + REDES.filter(function (r) { return r.k === ver.rede; })[0].nome;
+    explica.hidden = false;
+    explica.textContent = itens.length
+      ? itens.length + (itens.length === 1 ? " corte" : " cortes") + nomeRede + " " + TEXTO_FAIXA[ver.faixa][1]
+      : TEXTO_FAIXA[ver.faixa][0];
+    controles.hidden = !docs.length;
+    if (!docs.length) {
+      explica.hidden = true;
+      avisar("Nenhum corte na pauta ainda. Os cortes de cada rodada aparecem aqui, com o vídeo para baixar e os textos de cada rede.");
+    } else {
+      avisar("");
+    }
   }
+
+  controles.addEventListener("click", function (ev) {
+    var b = ev.target.closest(".seg");
+    if (!b) return;
+    if (b.dataset.rede) ver.rede = b.dataset.rede;
+    if (b.dataset.faixa) ver.faixa = b.dataset.faixa;
+    try { localStorage.setItem("pauta-ver", JSON.stringify(ver)); } catch (e) {}
+    desenhar(true);
+  });
 
   function receber(snap) {
     clearTimeout(relogio);
-    var docs = snap.docs.filter(function (d) { return d.exists; })
-      .map(function (d) { return { id: d.id, c: d.data() }; })
+    docs = snap.docs.filter(function (d) { return d.exists; })
+      .map(function (d) { return { id: d.id, c: JSON.parse(JSON.stringify(d.data())) }; })
       .filter(function (x) { return x.c && x.c.postar_em && x.c.redes; })
       .sort(function (a, b) { return a.c.postar_em < b.c.postar_em ? -1 : a.c.postar_em > b.c.postar_em ? 1 : 0; });
-    var nova = diaDe(new Date()) + ";" + docs.map(function (x) { return x.id + "|" + x.c.postar_em + "|" + (x.c.asset || ""); }).join(",");
-    if (nova !== assinatura) { assinatura = nova; montar(docs); return; }
-    // só mudaram as marcações: atualiza as caixas sem recriar a página (não interrompe um vídeo tocando)
-    docs.forEach(function (x) {
-      REDES.forEach(function (r) {
-        var caixa = caixas[x.id] && caixas[x.id][r.k];
-        if (!caixa || gravando[x.id + r.k]) return;
-        caixa.checked = !!(x.c.postado && x.c.postado[r.k]);
-        caixa.closest(".rede").classList.toggle("pronta", caixa.checked);
-      });
-      contar(x.id);
-    });
+    desenhar(false);
   }
 
   var relogio = setTimeout(function () {
@@ -243,7 +287,7 @@
       return;
     }
     db = base;
-    db.collection("cortes").limit(300).onSnapshot(receber, function (e) {
+    db.collection("cortes").limit(500).onSnapshot(receber, function (e) {
       clearTimeout(relogio);
       avisar("Não foi possível ler os cortes agora (" + ((e && e.code) || "erro") + "). Recarregue a página em instantes.");
     });
