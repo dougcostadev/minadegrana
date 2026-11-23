@@ -57,6 +57,14 @@ def _censura(censura, tarjas):
     return filtros
 
 
+def carimbar(origem, destino, ass):
+    """Queima um .ass (marca e chamada) num vídeo vertical já pronto, respeitando o teto de tamanho."""
+    subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", origem, "-vf", f"ass='{_esc(ass)}'",
+                    "-c:v", "libx264", "-preset", "veryfast", *_taxa(_duracao(origem)), "-pix_fmt", "yuv420p",
+                    "-c:a", "copy", "-movflags", "+faststart", destino], check=True)
+    return destino
+
+
 def renderizar(origem, destino, inicio=None, fim=None, cam=None, legenda_ass=None, censura=None,
                tarjas=None):
     """Renderiza um corte. `cam` = (x, y, w, h) da webcam no vídeo original, ou None."""

@@ -34,13 +34,23 @@ def texto(palavras):
     return "".join(p[2] for p in palavras or []).strip()
 
 
+# Identidade na tela: marca fixa no canto e chamada para seguir nos segundos finais.
+MARCA = "LEONIDA CLIPES"
+CHAMADA = "SEGUE PRA MAIS\\NGTA 6 TODO DIA"
+CHAMADA_SEG = 3.0
+
+
 def escrever_ass(destino, duracao, palavras=None, y_legenda=1200, gancho=None, y_gancho=540,
-                 palavras_por_bloco=3, censura=None, y_censura=1200):
+                 palavras_por_bloco=3, censura=None, y_censura=1200, marca=MARCA, chamada=CHAMADA):
     """Gera o .ass (1080x1920). Retorna False se não houver nada para escrever."""
     linhas = []
     if gancho:
         quebrado = "\\N".join(textwrap.wrap(_limpo(gancho), 22)[:3])
         linhas.append(f"Dialogue: 1,{_t(0)},{_t(duracao + 1)},G,,0,0,{y_gancho},,{quebrado}")
+    if marca:      # canto superior esquerdo, abaixo da barra dos aplicativos
+        linhas.append(f"Dialogue: 3,{_t(0)},{_t(duracao + 1)},M,,0,0,0,,{_limpo(marca)}")
+    if chamada and duracao > CHAMADA_SEG + 4:  # parte de baixo do jogo, acima da legenda dos aplicativos
+        linhas.append(f"Dialogue: 4,{_t(duracao - CHAMADA_SEG)},{_t(duracao + 1)},S,,0,0,0,,{{\\fad(250,0)}}{chamada}")
     for ini, fim in censura or []:  # selo sobre o painel pixelizado
         linhas.append(f"Dialogue: 2,{_t(ini)},{_t(fim)},C,,0,0,{y_censura},,CENSURADO")
     palavras = palavras or []
@@ -63,6 +73,8 @@ Format: Name, Fontname, Fontsize, PrimaryColour, OutlineColour, BackColour, Bold
 Style: P,DejaVu Sans,74,&H0000FFFF,&H00000000,&H80000000,1,1,6,2,8,60,60,0
 Style: G,DejaVu Sans,62,&H00000000,&H00FFFFFF,&H00FFFFFF,1,3,18,0,8,50,50,0
 Style: C,DejaVu Sans,70,&H00FFFFFF,&H00000000,&H00000000,1,3,22,0,8,50,50,0
+Style: M,DejaVu Sans,36,&H30FFFFFF,&H50000000,&H80000000,1,1,3,1,7,40,40,214
+Style: S,DejaVu Sans,66,&H00FFFFFF,&H00631EC8,&H00631EC8,1,3,20,0,8,90,90,1310
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
