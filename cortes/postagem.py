@@ -60,8 +60,8 @@ def carregar(saida="saida", incluir_publicados=False):
             m = json.load(f)
         if not isinstance(m, dict):  # agenda.json e lote.json também moram em saida/
             continue
-        if m.get("na_pauta") and not incluir_publicados:
-            continue
+        if (m.get("na_pauta") or m.get("segurar")) and not incluir_publicados:
+            continue  # já está na biblioteca, ou foi segurado de propósito ("segurar": true no .json)
         if os.path.exists(m.get("arquivo", "")) and m.get("canal_original"):
             m["_json"] = caminho
             m["redes"] = textos(m)
