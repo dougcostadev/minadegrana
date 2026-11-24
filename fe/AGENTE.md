@@ -30,13 +30,14 @@ Se a ferramenta `ArtifactData` não estiver na lista, carregue-a com ToolSearch 
 2. Anote os ganchos, os temas e os versículos já usados. Não repita versículo dos últimos 14 dias
    nem a mesma ideia de gancho.
 3. `$FE_PY -m fe limpeza saida-fe/biblioteca/videos` lista os vídeos já postados nas duas redes que ainda
-   guardam o arquivo. Para cada um:
+   guardam o arquivo. **Só apague se o prompt da tarefa disser que o dono autorizou a limpeza.** Sem
+   essa autorização, apenas informe no resumo quantos são. Com autorização, para cada um:
    - apague o anexo com a ferramenta `Artifact`, `action: "delete"`, `url: BIBLIOTECA` e
      `path: "<asset>"`;
    - depois faça um `ArtifactData` `update` no documento com `{"asset": null, "video_removido": true}`
      e `if_version` igual à versão anotada.
 
-   Apague só esses anexos, nunca capa nem documento.
+   Apague só esses anexos, nunca capa nem documento. A biblioteca guarda até 1 GB; cada vídeo tem uns 8 MB.
 
 ## 3. Escrever os roteiros
 
