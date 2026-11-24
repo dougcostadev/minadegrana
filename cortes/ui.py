@@ -116,3 +116,88 @@ def moldura(destino, gancho=None, streamer=None, com_cam=True):
         img.alpha_composite(Image.open(SELO).convert("RGBA").resize((lado, lado), Image.LANCZOS), (sx, sy))
     img.save(destino)
     return destino
+
+
+TITULO = os.path.join(RAIZ, "fontes", "Anton-Regular.ttf")
+
+
+def _titulo(texto, largura, destaque=None, corpo_max=210, linhas_max=3):
+    """Desenha o título da capa em linhas curtas, com contorno escuro e sombra rosa; devolve a imagem."""
+    palavras = texto.upper().split()
+    for corpo in range(corpo_max, 90, -10):
+        f = ImageFont.truetype(TITULO, corpo)
+        linhas, atual = [], ""
+        for p in palavras:
+            tenta = (atual + " " + p).strip()
+            if f.getlength(tenta) <= largura or not atual:
+                atual = tenta
+            else:
+                linhas.append(atual)
+                atual = p
+        linhas.append(atual)
+        if len(linhas) <= linhas_max and all(f.getlength(l) <= largura for l in linhas):
+            break
+    alt_linha = int(corpo * 1.08)
+    img = Image.new("RGBA", (largura + 80, alt_linha * len(linhas) + 80), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    dest = (destaque or linhas[-1]).upper()
+    for i, l in enumerate(linhas):
+        y = 40 + i * alt_linha + alt_linha // 2
+        cor = AMARELO if l in dest or dest in l else BRANCO
+        d.text((img.width // 2 + 8, y + 10), l, font=f, fill=ROSA + (255,), anchor="mm", stroke_width=14, stroke_fill=ROSA + (255,))
+        d.text((img.width // 2, y), l, font=f, fill=cor + (255,), anchor="mm", stroke_width=14, stroke_fill=NOITE + (255,))
+    return img
+
+
+def capa(destino, quadro, titulo, streamer=None, rosto=None, destaque=None, foco=0.5, evitar=None):
+    """Capa 1080x1920 do corte: o momento-chave do jogo ao fundo, título grande, rosto do streamer e selo.
+
+    `quadro` e `rosto` são imagens (PIL). Tudo o que importa fica na faixa central, porque as
+    grades de perfil do TikTok e do Instagram cortam o topo e o pé da capa.
+    """
+    q = quadro.convert("RGB")
+    larg = int(q.height * 9 / 16)
+    x0 = int(min(max(0, q.width * foco - larg / 2), q.width - larg))
+    if evitar:  # a webcam do streamer no quadro original não deve aparecer no fundo da capa
+        ex, _, ew, _ = evitar
+        if x0 < ex + ew and x0 + larg > ex:
+            x0 = ex - larg if ex - larg >= 0 else (ex + ew if ex + ew + larg <= q.width else x0)
+    fundo = q.crop((x0, 0, x0 + larg, q.height)).resize((L, A), Image.LANCZOS).filter(ImageFilter.UnsharpMask(3, 60, 2))
+    img = fundo.convert("RGBA")
+    # escurece em cima e embaixo para o texto e o rosto destacarem
+    sombra = Image.new("L", (1, A), 0)
+    px = sombra.load()
+    for y in range(A):
+        cima = max(0.0, 1 - y / 760)
+        baixo = max(0.0, (y - 1050) / 870)
+        px[0, y] = int(215 * max(cima, baixo) ** 1.3)
+    img.alpha_composite(Image.merge("RGBA", (*Image.new("RGB", (L, A), NOITE).split(), sombra.resize((L, A)))))
+
+    t = _titulo(titulo, L - 150, destaque).rotate(4, expand=True, resample=Image.BICUBIC)
+    img.alpha_composite(t, ((L - t.width) // 2, 560 - t.height // 2))
+
+    base_y = 1290
+    if rosto is not None:  # bolha com o rosto do streamer e o nome ao lado
+        lado = 330
+        r = rosto.convert("RGB")
+        m = min(r.size)
+        r = r.crop(((r.width - m) // 2, (r.height - m) // 2, (r.width + m) // 2, (r.height + m) // 2)).resize((lado, lado), Image.LANCZOS)
+        anel = _degrade(lado + 28, lado + 28)
+        ma = Image.new("L", anel.size, 0)
+        ImageDraw.Draw(ma).ellipse((0, 0, anel.width - 1, anel.height - 1), fill=255)
+        img.paste(anel, (70, base_y - lado // 2 - 14), ma)
+        mr = Image.new("L", (lado, lado), 0)
+        ImageDraw.Draw(mr).ellipse((0, 0, lado - 1, lado - 1), fill=255)
+        img.paste(r, (84, base_y - lado // 2), mr)
+    if streamer:
+        nome = postagem.nome(streamer).upper()
+        fn = ImageFont.truetype(FORTE, 58)
+        fr = ImageFont.truetype(MEDIA, 30)
+        x = 450 if rosto is not None else 90
+        d = ImageDraw.Draw(img)
+        d.text((x, base_y - 44), "DA LIVE DE", font=fr, fill=CREME, anchor="lm", stroke_width=4, stroke_fill=NOITE)
+        d.text((x, base_y + 14), nome, font=fn, fill=BRANCO, anchor="lm", stroke_width=6, stroke_fill=NOITE)
+    if os.path.exists(SELO):
+        img.alpha_composite(Image.open(SELO).convert("RGBA").resize((230, 230), Image.LANCZOS), (L - 290, 1420))
+    img.convert("RGB").save(destino, quality=92)
+    return destino

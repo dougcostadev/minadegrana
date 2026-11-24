@@ -105,10 +105,12 @@ def renderizar(origem, destino, inicio=None, fim=None, cam=None, legenda_ass=Non
         filtro += f";[v0]ass='{_esc(legenda_ass)}'[v1]"
     else:
         filtro += ";[v0]null[v1]"
-    if moldura:  # PNG do tamanho do vídeo com gancho, plaquinha do streamer e selo (cortes/ui.py)
+    if moldura:  # PNG do tamanho do vídeo com gancho, etiqueta do streamer e selo (cortes/ui.py)
         filtro += f";movie='{_esc(moldura)}',format=rgba[ui];[v1][ui]overlay=0:0[v]"
-    else:
+    elif moldura is None:
         filtro += ";" + _selo("v1", "v", com_cam=bool(cam))
+    else:  # moldura=False: vídeo limpo, para quem vai editar por cima e pôr a moldura no fim
+        filtro += ";[v1]null[v]"
 
     segundos = (fim - inicio) if (inicio is not None and fim is not None) else _duracao(origem)
     cmd = ["ffmpeg", "-y", "-v", "error"]
