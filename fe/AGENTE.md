@@ -16,7 +16,7 @@ sozinho até o fim, sem perguntar nada. Na CPU, cada vídeo leva uns 6 minutos.
 ## 1. Preparar
 
 ```bash
-git checkout claude/focused-hopper-8r0y97 && git pull -q origin claude/focused-hopper-8r0y97
+git checkout main && git pull -q origin main
 source fe/preparar.sh        # define FE_PY; na primeira vez baixa o modelo de voz (3 GB)
 ```
 
