@@ -3,6 +3,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 
 from . import facecam, ganchos, legendas, momentos, postagem, render, yt
 
@@ -163,11 +164,66 @@ def baixar_clipe(clipe, pasta):
         return ydl.prepare_filename(info)
 
 
+def _cam_exposta(mudanca, censura, censura_cam):
+    """True se, em algum instante da mudança de lugar do rosto, o jogo está tampado e a cam aparece."""
+    def dentro(t, trechos):
+        return any(a <= t <= b for a, b in trechos)
+
+    instantes = (mudanca["inicio"] + k / 4 for k in range(int((mudanca["fim"] - mudanca["inicio"]) * 4) + 1))
+    return any(dentro(t, censura) and not dentro(t, censura_cam) for t in instantes)
+
+
+def _avisar_cam(caixa, cam_muda, firme, censura, censura_cam, faltas):
+    """Diz a quem está montando o corte o que precisa conferir na cam (na saída de erro).
+
+    `faltas`: pedaços dos trechos em que o rosto não foi confirmado, quando foi o programa que
+    decidiu onde a cam some; None quando veio de --censurar-cam.
+    """
+    def avisar(texto):
+        print(texto, file=sys.stderr)
+
+    nome = ":".join(str(v) for v in caixa or ())
+    if cam_muda:  # a caixa é uma só para o clipe todo: ali o recorte pode cortar o rosto ou mostrar jogo
+        avisar("AVISO: o rosto do streamer muda de lugar durante o clipe (" + facecam.descrever(cam_muda)
+               + "). A webcam pode ter sido movida: confira a cam nesses trechos e, se o rosto sair"
+               " cortado, monte de novo com --cam x:y:w:h.")
+    if caixa and not firme:
+        avisar(f"AVISO: o que aparece na caixa da cam ({nome}) muda ao longo do clipe: ou a webcam foi"
+               " movida, ou a caixa não é a webcam (a detecção pode ter pego um rosto do jogo). Confira o"
+               " painel de cima e corrija com --cam x:y:w:h ou --sem-cam.")
+    if censura_cam and faltas is not None:
+        pedacos = ",".join(f"{a:g}-{b:g}" for a, b in faltas)
+        if not firme:
+            avisar("AVISO: por isso a cam não aparece nos trechos de --censurar. Se ela for mesmo a webcam,"
+                   " monte de novo com --censurar-cam "
+                   + (f'"{pedacos}" (os pedaços em que o rosto não foi confirmado no lugar).' if faltas else "nao."))
+        else:
+            avisar(f'AVISO: nos trechos de --censurar a cam não aparece em "{pedacos}": ali o rosto do'
+                   " streamer não foi confirmado na caixa da cam (webcam fora do lugar ou escondida, ou ele"
+                   " de lado ou fora do quadro). Se no clipe original a webcam está no lugar nesses pedaços,"
+                   ' monte de novo com --censurar-cam nao, ou com --censurar-cam "inicio-fim" só onde ela'
+                   " sai do lugar.")
+    if caixa and sum(b - a for a, b in censura) - sum(b - a for a, b in censura_cam) > 0.1:
+        avisar(f"CONFIRA: nos trechos de --censurar a cam (caixa {nome}) aparece por cima do jogo. Ela tem"
+               " de mostrar só a webcam do streamer: se for imagem do jogo, monte de novo com --sem-cam ou"
+               " com --cam x:y:w:h.")
+    expostas = [m for m in cam_muda if _cam_exposta(m, censura, censura_cam)] if faltas is None else []
+    if expostas:
+        avisar("ATENÇÃO: em trecho de --censurar com a cam à mostra o rosto sai do lugar ("
+               + facecam.descrever(expostas) + "). Pode aparecer jogo nítido na cam: tire a cam desses"
+               " pedaços com --censurar-cam.")
+
+
 def processar_clipe(clipe, saida="saida", trabalho="trabalho", legendar=False, cam=None,
-                    gancho=None, titulo=None, legenda=None, censura=None, tarjas=None, aviso=None):
+                    gancho=None, titulo=None, legenda=None, censura=None, tarjas=None, aviso=None,
+                    censura_cam=None, sem_cam=False):
     """Clipe de espectador -> vídeo vertical com gancho na tela. Retorna os metadados ou None.
 
     Com `gancho` e `titulo` informados (escritos por quem viu o clipe), não consulta a IA.
+    Nos trechos de `censura` o jogo sai de foco e a cam desce para cima dele (`render.renderizar`).
+    `censura_cam` diz em que pedaços a cam não aparece. Sem ela, a cam só aparece se a caixa
+    mostra a mesma cena o clipe inteiro e enquanto o rosto do streamer é confirmado no lugar
+    (`facecam.analisar` e `facecam.ausencias`). `sem_cam` monta o layout sem câmera.
     """
     os.makedirs(saida, exist_ok=True)
     os.makedirs(trabalho, exist_ok=True)
@@ -191,18 +247,24 @@ def processar_clipe(clipe, saida="saida", trabalho="trabalho", legendar=False, c
         print(f"reprovado ({g.get('motivo', '')[:120]}): {clipe['titulo']}")
         return None
 
-    caixa = cam or facecam.detectar(bruto)
+    # a análise roda mesmo com a caixa informada à mão: é ela que percebe a webcam mudando de lugar
+    caixa, cam_muda, rosto, firme = facecam.SEM_CAM if sem_cam else facecam.analisar(bruto, cam)
+    censura = list(censura or [])
+    confirmar = censura_cam is None  # ninguém disse onde a cam some: vale o rosto, quadro a quadro
+    faltas = facecam.ausencias(bruto, rosto, censura) if caixa and censura and confirmar else []
+    if not caixa or not censura:
+        censura_cam = []
+    elif confirmar:  # caixa que não se mantém ao longo do clipe não tampa nada sem alguém conferir
+        censura_cam = faltas if firme else list(censura)
     nome = f"{_slug(canal)}-{_slug(clipe['id'])[-12:]}"
     destino = os.path.join(saida, nome + ".mp4")
     ass = os.path.join(trabalho, nome + ".ass")
     # gancho na divisória entre a cam e o gameplay; legenda logo abaixo, sem cobrir o jogo
     y_gancho, y_legenda = (render.A_CAM - 70, render.A_CAM + 130) if caixa else (150, 330)
-    y_censura = render.A_CAM + 580 if caixa else 900  # meio do painel do jogo
     tem_texto = legendas.escrever_ass(ass, _duracao(bruto), palavras, y_legenda, g["gancho"], y_gancho,
-                                      censura=censura, y_censura=y_censura,
                                       y_marca=legendas.Y_MARCA if caixa else legendas.Y_MARCA_SEM_CAM)
     render.renderizar(bruto, destino, cam=caixa, legenda_ass=ass if tem_texto else None,
-                      censura=censura, tarjas=tarjas)
+                      censura=censura, tarjas=tarjas, censura_cam=censura_cam)
 
     slug = clipe.get("slug") or canal.lower()
     meta = {
@@ -214,9 +276,14 @@ def processar_clipe(clipe, saida="saida", trabalho="trabalho", legendar=False, c
         "views_do_clipe": clipe["views"], "titulo_do_clipe": clipe["titulo"],
         "duracao_s": round(_duracao(destino)), "facecam": caixa,
     }
+    if cam_muda:
+        meta["cam_muda"] = cam_muda
+    _avisar_cam(caixa, cam_muda, firme, censura, censura_cam, None if not confirmar else faltas)
     if censura or tarjas:
-        trechos = sorted([(a, b) for a, b in censura or []] + [(t[0], t[1]) for t in tarjas or []])
+        trechos = sorted({(a, b) for a, b in censura} | {(t[0], t[1]) for t in tarjas or []})
         meta["censura"] = trechos
+        if caixa and censura:
+            meta["censura_cam"] = sorted(tuple(t) for t in censura_cam)
         meta["aviso"] = ("Tem trecho censurado (" + ", ".join(f"{a:.0f}s a {b:.0f}s" for a, b in trechos)
                          + "). Assista ao vídeo inteiro antes de postar.")
     if aviso:  # ressalva do editor (palavrão, cam torta...), aparece na página da biblioteca

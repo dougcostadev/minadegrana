@@ -121,8 +121,8 @@ O GTA 6 tem muita cena assim e elas rendem clipes. A regra do dono do canal:
 | O que aparece | O que fazer |
 |---|---|
 | **Sugestivo, sem nudez e sem ato sexual**: biquíni, flerte, beijo, dança de roupa, piada de duplo sentido | Pode entrar normalmente, se tiver situação e desfecho. |
-| **Nudez** (seios, nádegas ou genitais à mostra) em parte do clipe | Pode entrar **com censura** cobrindo toda a nudez, do primeiro ao último quadro em que aparece. |
-| **Ato sexual de passagem** (até cerca de um terço do clipe) e a graça é a reação do streamer | Pode entrar **com o trecho inteiro pixelizado**. |
+| **Nudez** (seios, nádegas ou genitais à mostra) em parte do clipe | Pode entrar **com o trecho tampado** (`--censurar`, abaixo), do primeiro ao último quadro em que a nudez aparece. |
+| **Ato sexual de passagem** (até cerca de um terço do clipe) e a graça é a reação do streamer | Pode entrar **com o trecho inteiro tampado**. |
 | **Ato sexual como assunto do clipe** (cena de sexo, strip ou lap dance na maior parte do tempo) | Descarte. Censurado não sobra vídeo, e TikTok e Instagram removem mesmo assim. |
 
 Gancho, título e legenda nunca usam termo sexual, nem nesses clipes. Na dúvida entre duas linhas
@@ -148,29 +148,63 @@ Se o clipe tiver algo que o dono precisa saber antes de postar (palavrão no áu
 tela, cam cortada, cena no limite da regra), acrescente `--aviso "..."` com uma frase curta: ela
 aparece na página, ao lado do clipe.
 
-**Clipe que precisa de censura.** Monte primeiro sem censura, extraia um quadro por segundo
+**Clipe que precisa de censura.** O corte não leva pixel nem selo de censura: o dono do canal
+não quer vídeo com cara de censurado, que cai nas redes. No trecho sensível o jogo sai de foco
+no quadro inteiro e a cam do streamer desce para cima dele: quem tampa a cena é o próprio
+streamer, e a reação continua à mostra.
+
+Monte primeiro sem censura, extraia um quadro por segundo
 do resultado (`ffmpeg -y -v error -i saida/x.mp4 -vf fps=1,scale=270:-1 trabalho/q-%02d.png`) e anote
 em que segundos a nudez ou o ato aparece. Depois monte de novo, com o mesmo gancho, título e
-legenda, acrescentando uma das opções (com 1 segundo de folga antes e depois de cada trecho):
+legenda, acrescentando (com 1 segundo de folga antes e depois de cada trecho):
 
-- `--censurar "12-19,24-30"`: pixeliza o painel do jogo inteiro nesses trechos e põe o selo
-  CENSURADO. É a opção segura para cena com movimento de câmera.
+- `--censurar "12-19,24-30"`: nesses trechos o jogo fica fora de foco e a cam vai para cima
+  dele. É a opção padrão.
 - `--tarja "12-19:0.30,0.40,0.40,0.30"`: tarja preta só numa região, em frações do painel do jogo
-  (x, y, largura, altura). Use apenas em plano parado; separe várias com `;`.
+  (x, y, largura, altura); separe várias com `;`. Deixa marca de censura na tela: só em plano
+  parado, quando tirar o jogo de foco estragaria o clipe.
 
-A censura cobre só o painel do jogo. O painel de cima é um recorte fixo do vídeo original:
-se o streamer mexer na webcam ou a cam estiver mal detectada, pode aparecer jogo ali, sem
-censura. Por isso confira **os dois painéis**.
+**A cam dentro do trecho.** A cam é um recorte fixo do vídeo original (a caixa `facecam` que o
+`montar` imprime). Se o streamer arrastar ou esconder a webcam, se a caixa pegar mais que a
+webcam, ou se a caixa nem for a webcam, aparece jogo **nítido** ali. Por isso, dentro dos
+trechos de `--censurar`, a cam só aparece quando o programa tem como confiar nela: a caixa
+mostra a mesma cena o clipe inteiro e o rosto do streamer está confirmado no lugar naquele
+momento. No resto fica só o jogo fora de foco. Leia os avisos que o `montar` imprime:
 
-Extraia de novo um quadro por segundo e confira **todos** os quadros dos trechos e das bordas
-deles: se sobrar qualquer nudez visível, aumente o trecho ou troque a tarja por `--censurar`.
+- `CONFIRA: ... a cam (caixa ...) aparece por cima do jogo`: sai sempre que a cam aparece num
+  trecho. Olhe a cam nos quadros: tem de ser o streamer na webcam. Quando o clipe não tem
+  webcam, a detecção às vezes pega o rosto de um personagem, e aí o que aparece nítido por cima
+  é o próprio jogo: monte de novo com `--sem-cam`.
+- `a cam não aparece em "X-Y"`: o rosto não foi confirmado ali. Pode ser a webcam fora do
+  lugar, ou só o streamer de lado ou com a mão na frente. Veja o intervalo no clipe original
+  (`ffmpeg -y -v error -ss X -to Y -i trabalho/ARQUIVO -vf fps=4,scale=480:-1 trabalho/c-%03d.png`).
+  Se a webcam está parada no lugar de sempre em **todos** os quadros, monte de novo com
+  `--censurar-cam nao` (a cam aparece no trecho inteiro) ou com `--censurar-cam "X-Y"` só nos
+  pedaços em que ela sai do lugar. Se ela saiu mesmo, deixe como está.
+- `o que aparece na caixa da cam muda ao longo do clipe` e `por isso a cam não aparece nos
+  trechos`: ou a webcam foi movida no meio do clipe, ou a caixa não é a webcam. Veja o painel
+  de cima no corte sem censura. Se for jogo, `--sem-cam` (ou `--cam` com a caixa certa). Se for
+  o streamer e a webcam só mudou de lugar, monte de novo com o `--censurar-cam "..."` que o
+  próprio aviso sugere: a cam some só onde o rosto não foi confirmado.
+- `o rosto do streamer muda de lugar (... --cam x:y:w:h)`: a webcam foi movida no meio do
+  clipe. A caixa é uma só para o corte inteiro: use com `--cam` a que serve para a maior parte
+  dele (o aviso traz a caixa de cada posição).
+- `ATENÇÃO: em trecho de --censurar com a cam à mostra o rosto sai do lugar`: o `--censurar-cam`
+  que você passou deixa a cam aparecer onde a webcam não está. Corrija os pedaços.
+
+Extraia de novo um quadro por segundo e confira **o quadro inteiro** em **todos** os quadros dos
+trechos e das bordas deles: o jogo tem de estar fora de foco e a cam, quando aparece, só pode
+mostrar a webcam. Se sobrar nudez ou jogo nítido, aumente o trecho, tire a cam do pedaço com
+`--censurar-cam` ou corrija a caixa com `--cam`. Fora dos trechos, confira também o painel de
+cima: se ele mostrar jogo em algum momento sensível, inclua esse momento em `--censurar`.
 Se não conseguir cobrir tudo, apague o `.mp4` e o `.json` desse corte e descarte o clipe.
 
 Confira um quadro do resultado (`ffmpeg -y -v error -ss 5 -i saida/x.mp4 -frames:v 1 -vf scale=360:-1 q.png`):
 o gancho precisa estar legível e a parte de cima deve mostrar o rosto do streamer. Se a cam
 saiu errada, monte de novo informando a posição dela no vídeo original com `--cam x:y:w:h`
-(meça num quadro do arquivo em `trabalho/`). Se nem assim ficar boa, apague o `.mp4` e o
-`.json` desse corte de `saida/` e siga com os outros.
+(meça num quadro do arquivo em `trabalho/`). Se o clipe não tem webcam e a parte de cima mostra
+jogo (a detecção pegou o rosto de um personagem), monte com `--sem-cam`. Se nem assim ficar boa,
+apague o `.mp4` e o `.json` desse corte de `saida/` e siga com os outros.
 
 O nome do canal é **Clipes Leonida** (nunca "Leonida Clipes"). Os cortes não levam mais o nome
 escrito na tela: a marca vai ser uma marca d'água em imagem, que o dono do canal ainda vai enviar.

@@ -4,6 +4,7 @@ import subprocess
 
 L, A = 1080, 1920
 A_CAM = 608  # 1080x608 = 16:9
+Y_TAMPA = 720  # onde a cam fica quando desce para tampar o jogo: logo abaixo do gancho
 
 
 def _esc(caminho):
@@ -37,24 +38,25 @@ def compactar(arquivo):
     return True
 
 
+# A conversão para 30 fps vem antes de tudo: feita só na saída, com fonte a 60 fps, o tempo dos
+# filtros não bate com o do vídeo pronto e o que é ligado por trecho entra uns 2 quadros atrasado.
+_FPS = "fps=30"
+
+
 def _quando(trechos):
     """Expressão `enable` do ffmpeg para uma lista de (inicio, fim) em segundos."""
     return "+".join(f"between(t,{a:.2f},{b:.2f})" for a, b in trechos)
 
 
-def _censura(censura, tarjas):
-    """Filtros aplicados só ao painel do jogo: pixelização total e/ou tarjas pretas por trecho.
+def _sem_foco(w, h):
+    """Filtros que tiram um painel w x h de foco a ponto de não dar para reconhecer nada nele."""
+    return f"scale={w // 16}:{h // 16},gblur=sigma=6,scale={w}:{h}"
 
-    censura: [(inicio, fim)] — pixeliza o painel inteiro nesses trechos.
-    tarjas:  [(inicio, fim, x, y, w, h)] — retângulo preto; x, y, w, h são frações do painel (0 a 1).
-    """
-    filtros = ""
-    if censura:
-        filtros += f",pixelize=w=54:h=54:enable='{_quando(censura)}'"
-    for a, b, x, y, w, h in tarjas or []:
-        filtros += (f",drawbox=x=iw*{x:.3f}:y=ih*{y:.3f}:w=iw*{w:.3f}:h=ih*{h:.3f}:color=black:t=fill"
-                    f":enable='{_quando([(a, b)])}'")
-    return filtros
+
+def _tarjas(tarjas):
+    """Tarjas pretas no painel do jogo: [(inicio, fim, x, y, w, h)], com x, y, w, h em frações do painel."""
+    return "".join(f",drawbox=x=iw*{x:.3f}:y=ih*{y:.3f}:w=iw*{w:.3f}:h=ih*{h:.3f}:color=black:t=fill"
+                   f":enable='{_quando([(a, b)])}'" for a, b, x, y, w, h in tarjas or [])
 
 
 def carimbar(origem, destino, ass):
@@ -66,30 +68,41 @@ def carimbar(origem, destino, ass):
 
 
 def renderizar(origem, destino, inicio=None, fim=None, cam=None, legenda_ass=None, censura=None,
-               tarjas=None):
-    """Renderiza um corte. `cam` = (x, y, w, h) da webcam no vídeo original, ou None."""
+               tarjas=None, censura_cam=None):
+    """Renderiza um corte. `cam` = (x, y, w, h) da webcam no vídeo original, ou None.
+
+    censura: [(inicio, fim)] — nesses trechos o quadro inteiro vira o jogo fora de foco e a cam,
+    se houver, desce para cima dele, na largura toda: é o streamer que tampa a cena, sem pixel
+    nem selo de censura.
+    censura_cam: pedaços desses trechos em que a cam não aparece (fica só o jogo fora de foco).
+    O recorte da cam é fixo: se a webcam sair do lugar, ou a caixa pegar mais que a webcam,
+    aparece jogo nítido ali. None = a cam não aparece em nenhum trecho de `censura`; [] = aparece
+    em todos.
+    tarjas: retângulos pretos no painel do jogo (ver `_tarjas`).
+    """
+    if censura_cam is None:
+        censura_cam = censura
+    grafo = [f"[0:v]{_FPS},split={3 if censura else 2}[a][b]" + ("[c]" if censura else "")]
     if cam:
         x, y, w, h = cam
         a_jogo = A - A_CAM
-        filtro = (
-            f"[0:v]split=2[a][b];"
-            f"[a]crop={w}:{h}:{x}:{y},scale={L}:{A_CAM}:force_original_aspect_ratio=increase,"
-            f"crop={L}:{A_CAM}[cam];"
-            f"[b]crop=trunc(ih*{L}/{a_jogo}/2)*2:ih,scale={L}:{a_jogo}{_censura(censura, tarjas)}[jogo];"
-            f"[cam][jogo]vstack=inputs=2[v0]"
-        )
+        grafo += [f"[a]crop={w}:{h}:{x}:{y},scale={L}:{A_CAM}:force_original_aspect_ratio=increase,"
+                  f"crop={L}:{A_CAM}" + (",split=2[cam][tampa]" if censura else "[cam]"),
+                  f"[b]crop=trunc(ih*{L}/{a_jogo}/2)*2:ih,scale={L}:{a_jogo}{_tarjas(tarjas)}[jogo]",
+                  "[cam][jogo]vstack=inputs=2[v0]"]
     else:
         # sem cam: gameplay 4:5 no centro sobre o próprio vídeo desfocado
-        filtro = (
-            f"[0:v]split=2[a][b];"
-            f"[a]scale={L}:{A}:force_original_aspect_ratio=increase,crop={L}:{A},boxblur=24:2[fundo];"
-            f"[b]crop=trunc(ih*4/5/2)*2:ih,scale={L}:1350{_censura(censura, tarjas)}[jogo];"
-            f"[fundo][jogo]overlay=0:(H-h)/2[v0]"
-        )
-    if legenda_ass:
-        filtro += f";[v0]ass='{_esc(legenda_ass)}'[v]"
-    else:
-        filtro += ";[v0]null[v]"
+        grafo += [f"[a]scale={L}:{A}:force_original_aspect_ratio=increase,crop={L}:{A},boxblur=24:2[fundo]",
+                  f"[b]crop=trunc(ih*4/5/2)*2:ih,scale={L}:1350{_tarjas(tarjas)}[jogo]",
+                  "[fundo][jogo]overlay=0:(H-h)/2[v0]"]
+    if censura:
+        grafo.append(f"[c]scale={L}:{A}:force_original_aspect_ratio=increase,crop={L}:{A},{_sem_foco(L, A)}[foco]")
+        if cam:
+            aparece = f":enable='not({_quando(censura_cam)})'" if censura_cam else ""
+            grafo.append(f"[foco][tampa]overlay=0:{Y_TAMPA}{aparece}[foco2]")
+        grafo.append(f"[v0][{'foco2' if cam else 'foco'}]overlay=enable='{_quando(censura)}'[v1]")
+    grafo.append(f"[{'v1' if censura else 'v0'}]" + (f"ass='{_esc(legenda_ass)}'" if legenda_ass else "null") + "[v]")
+    filtro = ";".join(grafo)
 
     segundos = (fim - inicio) if (inicio is not None and fim is not None) else _duracao(origem)
     cmd = ["ffmpeg", "-y", "-v", "error"]

@@ -105,7 +105,13 @@ repositório `PRIVACIDADE` com o valor `public`.
   trechos escolhidos, não o VOD inteiro.
 - **Facecam** (`facecam.py`): detecta rosto em ~40 frames e fica com a região
   onde ele aparece de forma estável (webcam não se mexe; rosto de NPC sim).
+  Imagem parada com rosto (foto numa tela do jogo) não conta como webcam. Quando o
+  rosto muda de lugar no meio do clipe (webcam arrastada), o `montar` avisa.
 - **Render** (`render.py`): ffmpeg, 30 fps, áudio normalizado em -14 LUFS.
+- **Trecho sensível** (`montar --censurar "12-19"`): o jogo sai de foco e a cam desce
+  para cima dele, sem pixel nem selo de censura. A cam só aparece ali quando a caixa
+  mostra a mesma cena o clipe inteiro e o rosto do streamer está confirmado no lugar
+  (`--censurar-cam` ajusta à mão; `--sem-cam` quando a "cam" detectada é o jogo).
 
 ## Direitos e monetização
 

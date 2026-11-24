@@ -4,6 +4,22 @@ import json
 from . import facecam
 
 
+def _trechos(texto):
+    """'12-19,24-30' -> [(12.0, 19.0), (24.0, 30.0)]"""
+    try:
+        trechos = [tuple(float(v) for v in t.split("-")) for t in texto.split(",")]
+    except ValueError:
+        trechos = [()]
+    if any(len(t) != 2 or t[0] >= t[1] for t in trechos):
+        raise argparse.ArgumentTypeError('use "inicio-fim" em segundos, separados por vírgula: "12-19,24-30"')
+    return trechos
+
+
+def _trechos_cam(texto):
+    """Como `_trechos`, mas aceita "nao": lista vazia, a cam aparece o tempo todo."""
+    return [] if texto.strip().lower() in ("nao", "não") else _trechos(texto)
+
+
 def main():
     p = argparse.ArgumentParser(prog="cortes", description="Fábrica de cortes verticais de GTA 6")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -52,7 +68,13 @@ def main():
     mo.add_argument("--legenda", help="1 ou 2 frases para a legenda do post, terminando com uma pergunta")
     mo.add_argument("--cam", type=facecam.interpretar,
                     help="posição da facecam no vídeo original, x:y:w:h, quando a detecção errar")
-    mo.add_argument("--censurar", help='trechos em segundos em que o painel do jogo fica pixelizado: "12-19,24-30"')
+    mo.add_argument("--sem-cam", action="store_true",
+                    help="layout só com gameplay, quando o clipe não tem webcam e a detecção achou uma")
+    mo.add_argument("--censurar", type=_trechos,
+                    help='trechos em segundos em que o jogo sai de foco e a cam desce para tampá-lo: "12-19,24-30"')
+    mo.add_argument("--censurar-cam", type=_trechos_cam,
+                    help='pedaços dos trechos de --censurar em que a cam não aparece; "nao" = aparece sempre. '
+                         "Sem a opção, a cam só aparece enquanto o rosto é confirmado na caixa dela")
     mo.add_argument("--tarja", help='tarjas pretas: "inicio-fim:x,y,w,h" (frações do painel do jogo), separadas por ";"')
     mo.add_argument("--aviso", help="ressalva para o dono do canal ler antes de postar (palavrão no áudio, cam torta...)")
     mo.add_argument("--privacidade", default="private", choices=["private", "unlisted", "public"])
@@ -112,7 +134,6 @@ def main():
         elif a.cmd == "descartar":
             auto.marcar(clipe["id"])
         else:
-            censura = [tuple(float(v) for v in t.split("-")) for t in a.censurar.split(",")] if a.censurar else None
             tarjas = None
             if a.tarja:
                 tarjas = []
@@ -120,7 +141,8 @@ def main():
                     tempo, caixa = item.split(":")
                     tarjas.append(tuple(float(v) for v in tempo.split("-")) + tuple(float(v) for v in caixa.split(",")))
             meta = pipeline.processar_clipe(clipe, gancho=a.gancho, titulo=a.titulo, legenda=a.legenda,
-                                            censura=censura, tarjas=tarjas, cam=a.cam, aviso=a.aviso)
+                                            censura=a.censurar, censura_cam=a.censurar_cam, tarjas=tarjas,
+                                            cam=a.cam, sem_cam=a.sem_cam, aviso=a.aviso)
             if meta and publicar.configurado():
                 meta["publicado"] = publicar.enviar(meta, a.privacidade)
             auto.marcar(clipe["id"])
