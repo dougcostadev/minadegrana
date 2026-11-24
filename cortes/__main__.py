@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 
 from . import facecam
 
@@ -55,6 +56,11 @@ def main():
     mo.add_argument("--censurar", help='trechos em segundos em que o painel do jogo fica pixelizado: "12-19,24-30"')
     mo.add_argument("--tarja", help='tarjas pretas: "inicio-fim:x,y,w,h" (frações do painel do jogo), separadas por ";"')
     mo.add_argument("--aviso", help="ressalva para o dono do canal ler antes de postar (palavrão no áudio, cam torta...)")
+    mo.add_argument("--receita", help="arquivo JSON com os blocos do edit de meme (ver AGENTE.md)")
+    mo.add_argument("--capa", help="título curto da capa, até 4 palavras (padrão: o gancho)")
+    mo.add_argument("--capa-tempo", type=float, help="segundo do clipe que vira o fundo da capa (padrão: 40%% da duração)")
+    mo.add_argument("--capa-destaque", help="palavra do título da capa que sai em amarelo (padrão: a última linha)")
+    mo.add_argument("--capa-foco", type=float, default=0.5, help="onde está a ação no quadro original, de 0 (esquerda) a 1 (direita)")
     mo.add_argument("--privacidade", default="private", choices=["private", "unlisted", "public"])
     pc = sub.add_parser("pacote", help="fecha o lote: vídeos e capas em saida/postar/ e POSTAR.md (sem horários)")
     pc.add_argument("--rodada", action="store_true", help="com horários: tudo no mesmo dia, nos horários livres")
@@ -74,8 +80,21 @@ def main():
     es.add_argument("arquivo", nargs="?", default="saida/estado.json")
     de = sub.add_parser("descartar", help="marca o clipe N da fila como usado, sem gerar")
     de.add_argument("n", type=int)
-    for x in (pv, mo, de):
+    ba = sub.add_parser("base", help="baixa o clipe N e gera o corte vertical limpo, para estudar antes do edit")
+    ba.add_argument("n", type=int)
+    ba.add_argument("--cam", type=facecam.interpretar, help="posição da facecam no vídeo original, x:y:w:h")
+    for x in (pv, mo, de, ba):
         x.add_argument("--fila", default="fila.json")
+    qd = sub.add_parser("quadros", help="folhas de quadros com o segundo de cada um, para marcar os pontos do edit")
+    qd.add_argument("arquivo")
+    qd.add_argument("--de", type=float, default=0)
+    qd.add_argument("--ate", type=float)
+    qd.add_argument("--fps", type=float, default=2)
+    fa = sub.add_parser("falas", help="transcrição do vídeo com o segundo de cada frase")
+    fa.add_argument("arquivo")
+    me = sub.add_parser("meme", help="acervo e busca de sons e GIFs de meme")
+    me.add_argument("acao", choices=["acervo", "sons", "gifs"])
+    me.add_argument("termo", nargs="?")
     ca = sub.add_parser("canal", help="lista os Shorts públicos do canal no YouTube, com as views")
     ca.add_argument("--canal", default="@clipeleonida")
     sub.add_parser("autorizar", help="gera o YT_REFRESH_TOKEN (rodar uma vez, na sua máquina)")
@@ -119,8 +138,14 @@ def main():
                 for item in a.tarja.split(";"):
                     tempo, caixa = item.split(":")
                     tarjas.append(tuple(float(v) for v in tempo.split("-")) + tuple(float(v) for v in caixa.split(",")))
+            receita = None
+            if a.receita:
+                with open(a.receita, encoding="utf-8") as f:
+                    receita = json.load(f)
             meta = pipeline.processar_clipe(clipe, gancho=a.gancho, titulo=a.titulo, legenda=a.legenda,
-                                            censura=censura, tarjas=tarjas, cam=a.cam, aviso=a.aviso)
+                                            censura=censura, tarjas=tarjas, cam=a.cam, aviso=a.aviso,
+                                            receita=receita, capa_titulo=a.capa, capa_tempo=a.capa_tempo,
+                                            capa_destaque=a.capa_destaque, capa_foco=a.capa_foco)
             if meta and publicar.configurado():
                 meta["publicado"] = publicar.enviar(meta, a.privacidade)
             auto.marcar(clipe["id"])
@@ -148,6 +173,59 @@ def main():
         print(f"{len(writes)} documento(s) em saida/linhas/ e a lista de gravações em saida/lote.json")
         if faltando:
             print("SEM ANEXO (o botão de baixar não vai funcionar):", ", ".join(faltando))
+        return
+    if a.cmd == "base":
+        from . import pipeline
+        with open(a.fila, encoding="utf-8") as f:
+            clipe = json.load(f)[a.n]
+        feito = pipeline.base(clipe, cam=a.cam)
+        if not feito:
+            print("não é GTA 6 (ou não baixou)")
+            return
+        limpo, _, caixa, duracao = feito
+        print(f"corte limpo: {limpo}\nduração: {duracao:.1f}s\ncâmera: {'x:y:w:h = ' + ':'.join(map(str, caixa)) if caixa else 'não achada (formato sem câmera)'}")
+        return
+    if a.cmd == "quadros":
+        import subprocess
+        from . import render
+        fim = a.ate if a.ate is not None else render._duracao(a.arquivo)
+        por_folha, n, t = 32, 0, a.de
+        while t < fim - 0.01:
+            trecho = min(por_folha / a.fps, fim - t)
+            saida = f"{os.path.splitext(a.arquivo)[0]}.quadros-{n:02d}.png"
+            marca = f"drawtext=text='%{{eif\\:{t}+n/{a.fps}\\:d}}.%{{eif\\:mod(({t}+n/{a.fps})*10\\,10)\\:d}}s':fontcolor=yellow:fontsize=26:box=1:boxcolor=black@0.6:x=6:y=6"
+            subprocess.run(["ffmpeg", "-y", "-v", "error", "-ss", str(t), "-t", str(trecho), "-i", a.arquivo, "-vf",
+                            f"fps={a.fps},scale=200:-2,{marca},tile=8x4", "-frames:v", "1", saida], check=True)
+            print(saida)
+            n, t = n + 1, t + trecho
+        return
+    if a.cmd == "falas":
+        from . import legendas
+        palavras = legendas.transcrever(a.arquivo)
+        if palavras is None:
+            print("faster-whisper não está instalado (pip install faster-whisper)")
+            return
+        linha, t0 = [], None
+        for ini, fim, p in palavras:
+            t0 = ini if t0 is None else t0
+            linha.append(p.strip())
+            if len(linha) >= 10 or p.strip().endswith((".", "?", "!")):
+                print(f"{t0:6.1f} - {fim:6.1f}  {' '.join(linha)}")
+                linha, t0 = [], None
+        if linha:
+            print(f"{t0:6.1f} -         {' '.join(linha)}")
+        return
+    if a.cmd == "meme":
+        from . import meme
+        if a.acao == "acervo":
+            for tipo, itens in meme.acervo().items():
+                print(f"{tipo}: {', '.join(sorted(itens))}")
+        elif a.acao == "sons":
+            for titulo, url in meme.buscar_sons(a.termo or ""):
+                print(f"{titulo[:44]:44}  {url}")
+        else:
+            for url in meme.buscar_gifs(a.termo or ""):
+                print(url)
         return
     if a.cmd == "limpeza":
         from . import postagem

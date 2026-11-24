@@ -4,7 +4,7 @@ import os
 import re
 import subprocess
 
-from . import facecam, ganchos, legendas, momentos, postagem, render, ui, yt
+from . import facecam, ganchos, legendas, meme, momentos, postagem, render, ui, yt
 
 GANCHOS = [
     "ELE NÃO ACREDITOU NO QUE ACONTECEU NO GTA 6",
@@ -163,8 +163,41 @@ def baixar_clipe(clipe, pasta):
         return ydl.prepare_filename(info)
 
 
+def _quadro(video, segundo):
+    """Um quadro do vídeo como imagem PIL."""
+    import cv2
+    from PIL import Image
+    cap = cv2.VideoCapture(video)
+    cap.set(cv2.CAP_PROP_POS_MSEC, max(0.0, segundo) * 1000)
+    ok, frame = cap.read()
+    cap.release()
+    return Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)) if ok else None
+
+
+def base(clipe, trabalho="trabalho", cam=None, censura=None, tarjas=None, bruto=None):
+    """Baixa o clipe e gera o corte vertical limpo (sem moldura), base do edit.
+
+    Retorna (arquivo limpo, arquivo bruto, caixa da câmera, duração) ou None.
+    """
+    os.makedirs(trabalho, exist_ok=True)
+    bruto = bruto or baixar_clipe(clipe, trabalho)
+    if not bruto:
+        return None
+    caixa = cam or facecam.detectar(bruto)
+    nome = f"{_slug(clipe['canal'])}-{_slug(clipe['id'])[-12:]}"
+    limpo = os.path.join(trabalho, nome + ".limpo.mp4")
+    ass = None
+    if censura:  # o selo CENSURADO acompanha a pixelização
+        ass = os.path.join(trabalho, nome + ".ass")
+        legendas.escrever_ass(ass, _duracao(bruto), None, censura=censura,
+                              y_censura=render.A_CAM + 580 if caixa else 900, marca=None, chamada=None)
+    render.renderizar(bruto, limpo, cam=caixa, legenda_ass=ass, censura=censura, tarjas=tarjas, moldura=False)
+    return limpo, bruto, caixa, _duracao(limpo)
+
+
 def processar_clipe(clipe, saida="saida", trabalho="trabalho", legendar=False, cam=None,
-                    gancho=None, titulo=None, legenda=None, censura=None, tarjas=None, aviso=None):
+                    gancho=None, titulo=None, legenda=None, censura=None, tarjas=None, aviso=None,
+                    receita=None, capa_titulo=None, capa_tempo=None, capa_destaque=None, capa_foco=0.5):
     """Clipe de espectador -> vídeo vertical com gancho na tela. Retorna os metadados ou None.
 
     Com `gancho` e `titulo` informados (escritos por quem viu o clipe), não consulta a IA.
@@ -191,20 +224,29 @@ def processar_clipe(clipe, saida="saida", trabalho="trabalho", legendar=False, c
         print(f"reprovado ({g.get('motivo', '')[:120]}): {clipe['titulo']}")
         return None
 
-    caixa = cam or facecam.detectar(bruto)
+    limpo, _, caixa, duracao = base(clipe, trabalho, cam, censura, tarjas, bruto=bruto)
     nome = f"{_slug(canal)}-{_slug(clipe['id'])[-12:]}"
     destino = os.path.join(saida, nome + ".mp4")
-    ass = os.path.join(trabalho, nome + ".ass")
-    # gancho na divisória entre a cam e o gameplay; legenda logo abaixo, sem cobrir o jogo
-    y_gancho, y_legenda = (render.A_CAM - 70, render.A_CAM + 130) if caixa else (150, 330)
-    y_censura = render.A_CAM + 580 if caixa else 900  # meio do painel do jogo
-    # gancho, etiqueta do streamer e selo vão numa imagem só (cortes/ui.py); o .ass fica com o resto
-    tem_texto = legendas.escrever_ass(ass, _duracao(bruto), palavras, y_legenda, None, y_gancho,
-                                      censura=censura, y_censura=y_censura,
-                                      y_marca=legendas.Y_MARCA if caixa else legendas.Y_MARCA_SEM_CAM)
+    # por cima do corte limpo: moldura do canal (gancho, etiqueta do streamer, selo), capa no
+    # primeiro quadro e, se houver receita, o edit de meme
     moldura = ui.moldura(os.path.join(trabalho, nome + ".ui.png"), g["gancho"], canal, com_cam=bool(caixa))
-    render.renderizar(bruto, destino, cam=caixa, legenda_ass=ass if tem_texto else None,
-                      censura=censura, tarjas=tarjas, moldura=moldura)
+    instante = duracao * 0.4 if capa_tempo is None else float(capa_tempo)
+    quadro = _quadro(bruto, instante)
+    rosto = None
+    if caixa and quadro is not None:
+        x, y, w, h = caixa
+        rosto = quadro.crop((int(x + w * 0.18), y, int(x + w * 0.82), y + h))
+    capa = None
+    if quadro is not None:
+        capa = ui.capa(os.path.join(saida, nome + ".capa.jpg"), quadro, capa_titulo or g["gancho"].rstrip("."), canal,
+                       rosto=rosto, destaque=capa_destaque, foco=capa_foco, evitar=caixa)
+    blocos = (receita or {}).get("blocos") or [{"tipo": "clipe", "de": 0, "ate": duracao}]
+    qual = sum(ord(c) for c in str(clipe["id"]))  # a frase da chamada varia de um clipe para outro
+    final = ui.chamada(os.path.join(trabalho, nome + ".cta.png"), com_cam=bool(caixa), indice=qual)
+    estalo = ui.chamada(os.path.join(trabalho, nome + ".cta2.png"), com_cam=bool(caixa), indice=qual, estalo=True)
+    meme.editar(limpo, destino, blocos, moldura=moldura, capa=capa, com_cam=bool(caixa), trabalho=trabalho,
+                chamada=final, estalo=estalo)
+    render.compactar(destino)
 
     slug = clipe.get("slug") or canal.lower()
     meta = {
@@ -215,6 +257,7 @@ def processar_clipe(clipe, saida="saida", trabalho="trabalho", legendar=False, c
         "clipe_original": clipe["url"] if clipe["plataforma"] == "twitch" else None,
         "views_do_clipe": clipe["views"], "titulo_do_clipe": clipe["titulo"],
         "duracao_s": round(_duracao(destino)), "facecam": caixa,
+        "capa_arquivo": capa, "capa_titulo": capa_titulo, "edit_de_meme": bool(receita),
     }
     if censura or tarjas:
         trechos = sorted([(a, b) for a, b in censura or []] + [(t[0], t[1]) for t in tarjas or []])

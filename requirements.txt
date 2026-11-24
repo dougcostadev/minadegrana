@@ -1,8 +1,7 @@
 yt-dlp
 opencv-python-headless<5  # a 5.x removeu o detector Haar usado na facecam
 numpy
-# opcional, para legendas automáticas queimadas no vídeo:
-# faster-whisper
+faster-whisper  # transcrição com o segundo de cada fala, para marcar os pontos do edit
 google-api-python-client
 google-auth-oauthlib
 anthropic

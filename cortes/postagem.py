@@ -341,7 +341,11 @@ def pacote(saida="saida", rodada=False, agora=None, ocupados=(), todos=False, ho
         prefixo = f"{n:02d}-" if com_horario else ""  # na biblioteca o nome do arquivo não muda
         m["arquivo_postagem"] = os.path.join(pasta, prefixo + os.path.basename(m["arquivo"]))
         shutil.copyfile(m["arquivo"], m["arquivo_postagem"])  # cópia de verdade: o upload recusa hard link
-        _capa(m["arquivo"], os.path.splitext(m["arquivo_postagem"])[0] + ".jpg")
+        capa = os.path.splitext(m["arquivo_postagem"])[0] + ".jpg"
+        if m.get("capa_arquivo") and os.path.exists(m["capa_arquivo"]):
+            shutil.copyfile(m["capa_arquivo"], capa)  # a capa desenhada (1080x1920), a mesma do 1º quadro
+        else:
+            _capa(m["arquivo"], capa)
     escrever_md(ordem, os.path.join(saida, "POSTAR.md"))
     with open(os.path.join(saida, "agenda.json"), "w", encoding="utf-8") as f:
         json.dump(ordem, f, ensure_ascii=False)

@@ -79,6 +79,78 @@ def _etiqueta(img, streamer, cx, y_base, para_cima=True):
     d.text((x + fr.getlength(antes), meio), nome, font=fn, fill=BRANCO, anchor="lm")
 
 
+# Pedido fixo: convida para um grupo com nome (Leonida é o estado do jogo) e lembra de quem fica de fora.
+FIXO = ("ENTRA PRA LEONIDA", "SEGUE E NÃO FICA DE FORA")
+
+
+def _seguir(img, com_cam):
+    """Pedido para seguir, fixo no canto de cima à direita o vídeo inteiro (espelha o selo, longe do rosto)."""
+    f1, f2 = ImageFont.truetype(FORTE, 31), ImageFont.truetype(MEDIA, 20)
+    larg, alt = int(max(f1.getlength(FIXO[0]), f2.getlength(FIXO[1]))) + 2 * 24, 88
+    x0, y0 = L - 28 - larg, (199 if com_cam else 356)
+    s = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    ImageDraw.Draw(s).rounded_rectangle((x0, y0 + 8, x0 + larg, y0 + alt + 8), 28, fill=(0, 0, 0, 130))
+    img.alpha_composite(s.filter(ImageFilter.GaussianBlur(10)))
+    m = Image.new("L", (larg, alt), 0)
+    ImageDraw.Draw(m).rounded_rectangle((0, 0, larg - 1, alt - 1), 28, fill=255)
+    img.paste(_degrade(larg, alt, (AMARELO, LARANJA)), (x0, y0), m)
+    d = ImageDraw.Draw(img)
+    d.text((x0 + larg // 2, y0 + 31), FIXO[0], font=f1, fill=NOITE, anchor="mm")
+    d.text((x0 + larg // 2, y0 + 64), FIXO[1], font=f2, fill=NOITE, anchor="mm")
+
+
+# Frases da chamada para seguir, que troca de lugar com o gancho nos segundos finais.
+# Todas puxam pelo pertencimento: existe um grupo, ele tem lugar para você, e só você ainda está fora.
+# Nada de número inventado de seguidores: quando a conta tiver um número que impressiona, ele entra aqui.
+CHAMADAS = [
+    ("TODO FÃ DE GTA VI TEM LUGAR AQUI", "SÓ FALTA VOCÊ. SEGUE."),
+    ("QUEM É DE LEONIDA JÁ SEGUE", "VAI FICAR DE FORA?"),
+    ("A GENTE VÊ GTA VI JUNTO TODO DIA", "SÓ FALTA VOCÊ. SEGUE."),
+    ("VOCÊ SE DIZ FÃ DE GTA VI", "E AINDA NÃO SEGUE ESSE PERFIL?"),
+]
+
+
+def chamada(destino, frase=None, indice=0, com_cam=True, estalo=False):
+    """Moldura dos segundos finais: no lugar do gancho entra o pedido para seguir, com a 2ª linha em amarelo.
+
+    `estalo=True` gera a versão de entrada, com a placa rosa, mostrada por um instante para puxar o olho.
+    """
+    l1, l2 = frase or CHAMADAS[indice % len(CHAMADAS)]
+    img = Image.new("RGBA", (L, A), (0, 0, 0, 0))
+    if com_cam:
+        img.alpha_composite(_degrade(L, 8), (0, A_CAM - 4))
+    for corpo in (52, 48, 44, 40, 36):
+        f = ImageFont.truetype(FORTE, corpo)
+        if max(f.getlength(l1), f.getlength(l2)) <= L - 2 * 80:
+            break
+    alt_linha = int(corpo * 1.2)
+    larg = int(max(f.getlength(l1), f.getlength(l2))) + 2 * 40
+    alt = alt_linha * 2 + 2 * 24
+    centro = A_CAM if com_cam else 190
+    caixa = ((L - larg) // 2, centro - alt // 2, (L + larg) // 2, centro + alt // 2)
+    # etiqueta "SEGUE O PERFIL" no lugar da do streamer
+    fr = ImageFont.truetype(FORTE, 28)
+    lt, at = int(fr.getlength("SEGUE O PERFIL")) + 2 * 28, 54
+    y0 = caixa[1] - at + 10 if com_cam else caixa[3] - 10
+    m = Image.new("L", (lt, at), 0)
+    ImageDraw.Draw(m).rounded_rectangle((0, 0, lt - 1, at - 1), 18, fill=255)
+    img.paste(_degrade(lt, at, (AMARELO, LARANJA)), (L // 2 - lt // 2, y0), m)
+    ImageDraw.Draw(img).text((L // 2, y0 + (at - 10) // 2 + (0 if com_cam else 10)), "SEGUE O PERFIL", font=fr, fill=NOITE, anchor="mm")
+    if estalo:
+        caixa = (caixa[0] - 14, caixa[1] - 8, caixa[2] + 14, caixa[3] + 8)
+    _placa(img, caixa, raio=34, fundo=(ROSA if estalo else NOITE) + (250,), cores=(AMARELO, LARANJA, ROSA))
+    d = ImageDraw.Draw(img)
+    meio = (caixa[1] + caixa[3]) // 2
+    d.text((L // 2, meio - alt_linha // 2), l1, font=f, fill=BRANCO, anchor="mm")
+    d.text((L // 2, meio + alt_linha // 2), l2, font=f, fill=BRANCO if estalo else AMARELO, anchor="mm")
+    _seguir(img, com_cam)
+    if os.path.exists(SELO):
+        sx, sy, lado = (28, 168, 150) if com_cam else (28, 330, 140)
+        img.alpha_composite(Image.open(SELO).convert("RGBA").resize((lado, lado), Image.LANCZOS), (sx, sy))
+    img.save(destino)
+    return destino
+
+
 def moldura(destino, gancho=None, streamer=None, com_cam=True):
     """Gera o PNG transparente (1080x1920) com os elementos fixos do corte."""
     img = Image.new("RGBA", (L, A), (0, 0, 0, 0))
@@ -111,6 +183,7 @@ def moldura(destino, gancho=None, streamer=None, com_cam=True):
             d.text((L // 2, y), p, font=f, fill=BRANCO, anchor="mm")
             y += alt_linha
 
+    _seguir(img, com_cam)
     if os.path.exists(SELO):  # selo do canal sozinho no canto de cima
         sx, sy, lado = (28, 168, 150) if com_cam else (28, 330, 140)
         img.alpha_composite(Image.open(SELO).convert("RGBA").resize((lado, lado), Image.LANCZOS), (sx, sy))
