@@ -201,6 +201,10 @@ Regras do edit:
   A melhor legenda costuma ser a frase do próprio streamer, entre aspas.
 - **De 3 a 6 enfeites por vídeo.** Um na virada, um na reação, um no fecho; o resto só se couber.
   Tela poluída mata a piada.
+- **Não repita o fecho.** Na mesma rodada, cada clipe fecha de um jeito: o mesmo GIF, o mesmo som
+  e o final triste em preto e branco aparecem em um clipe só. O `hamster-triste` entra no máximo
+  uma vez por rodada; para os outros, busque um GIF que tenha a ver com o que aconteceu
+  (`python -m cortes meme gifs "termo"`) ou feche com a reação do streamer em tela cheia.
 - **Som no tempo certo.** O efeito entra no quadro exato da virada, não meio segundo depois.
 - Texto sem palavrão, sem termo sexual, sem ofensa a grupo de pessoas e sem inventar fato.
 - Memes e sons de gente real só em tom de brincadeira, nunca para humilhar alguém.
