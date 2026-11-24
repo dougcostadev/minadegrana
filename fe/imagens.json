@@ -223,7 +223,7 @@
   }
  },
  "cristo-crianca.jpg": {
-  "descricao": "Carl Bloch, Cristo e a criança. Jesus de branco com a mão na cabeça de uma criança.",
+  "descricao": "Carl Bloch, Cristo e a criança. Jesus de branco com a mão na cabeça de uma criança. A pintura tem topo arredondado com cantos brancos: mantenha o foco abaixo de 0,3 de altura ou o aperto acima de 1,5.",
   "fonte": "Wikimedia Commons, domínio público",
   "pontos": {
    "rosto de Jesus": [
@@ -243,9 +243,9 @@
    "os dois": [
     [
      0.5,
-     0.4
+     0.42
     ],
-    1.3
+    1.5
    ]
   }
  },

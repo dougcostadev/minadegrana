@@ -64,7 +64,7 @@ def produzir(arquivos, saida=SAIDA):
                         folha], check=True)  # um quadro a cada 2 s, para conferir sem assistir
         meta = {"id": r["_id"], "tema": r.get("tema", "fe"), "gancho": r["gancho"].replace("\\N", " ").replace("*", ""),
                 "versiculo": r.get("versiculo"), "roteiro": " ".join(f["texto"] for f in r["frases"]),
-                "redes": textos(r), "arquivo": os.path.basename(final), "duracao_s": info["duracao_s"],
+                "redes": textos(r), "arquivo": os.path.basename(final), "duracao_s": info["duracao_s"], "aviso": r.get("aviso"),
                 "avisos": avisos}
         json.dump(meta, open(final[:-4] + ".json", "w", encoding="utf-8"), ensure_ascii=False, indent=1)
         print(f"{r['_id']}: {info['duracao_s']} s de vídeo, montado em {time.time() - t1:.0f} s" +
@@ -81,7 +81,7 @@ def linhas(mapa_arq, saida=SAIDA):
         doc = {**{k: m[k] for k in ("id", "tema", "gancho", "versiculo", "roteiro", "redes", "arquivo", "duracao_s")},
                "nome": "Motivacional" if m["tema"] == "motivacional" else "Fé",
                "asset": mapa.get(m["arquivo"]), "capa": mapa.get(m["arquivo"][:-4] + ".jpg"),
-               "aviso": "; ".join(m.get("avisos") or []) or None,
+               "aviso": m.get("aviso"),  # nota para quem posta; os avisos de transcrição ficam só com o agente
                "criado_em": datetime.now(FUSO).isoformat(timespec="seconds"), "postado": {"tt": False, "ig": False}}
         caminho = os.path.abspath(os.path.join(pasta, m["id"] + ".json"))
         json.dump(doc, open(caminho, "w", encoding="utf-8"), ensure_ascii=False)

@@ -24,15 +24,17 @@ Se a ferramenta `ArtifactData` não estiver na lista, carregue-a com ToolSearch 
 
 ## 2. Ler a biblioteca e liberar espaço
 
-1. `ArtifactData` com `action: "list"`, `url: BIBLIOTECA`, `collection: "videos"`. Grave cada
-   documento em `saida-fe/biblioteca/<doc_id>.json`.
+1. `ArtifactData` com `action: "list"`, `url: BIBLIOTECA`, `collection: "videos"`,
+   `query: {"limit": 1000}` e `out_dir: "<caminho absoluto>/saida-fe/biblioteca"`.
+   Os documentos ficam em `saida-fe/biblioteca/videos/`. Anote a `version` de cada um.
 2. Anote os ganchos, os temas e os versículos já usados. Não repita versículo dos últimos 14 dias
    nem a mesma ideia de gancho.
-3. `$FE_PY -m fe limpeza saida-fe/biblioteca` lista os vídeos já postados nas duas redes que ainda
+3. `$FE_PY -m fe limpeza saida-fe/biblioteca/videos` lista os vídeos já postados nas duas redes que ainda
    guardam o arquivo. Para cada um:
    - apague o anexo com a ferramenta `Artifact`, `action: "delete"`, `url: BIBLIOTECA` e
      `path: "<asset>"`;
-   - depois faça um `ArtifactData` `update` no documento com `{"asset": null, "video_removido": true}`.
+   - depois faça um `ArtifactData` `update` no documento com `{"asset": null, "video_removido": true}`
+     e `if_version` igual à versão anotada.
 
    Apague só esses anexos, nunca capa nem documento.
 
@@ -85,6 +87,7 @@ Um arquivo JSON por vídeo em `saida-fe/roteiros/<id>.json`, com `id` curto e se
   alterne.
 - Troque de plano a cada 1,5 a 3 segundos: frase com mais de ~3 s leva um `corte`
   (`{"palavra": ..., "img": ..., "foco": ..., "aperto": ...}`) numa palavra forte do meio da frase.
+- Nenhum plano fica mais de 4 segundos parado. O versículo costuma passar disso: ponha um `corte` nele também.
 - No máximo 3 planos da mesma pintura por vídeo. Varie as pinturas entre os vídeos da rodada.
 - Para ampliar o banco (até 2 por rodada), use só pinturas em domínio público do Wikimedia Commons
   (artistas mortos há mais de 70 anos):
