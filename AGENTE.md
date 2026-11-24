@@ -16,7 +16,7 @@ avaliação**. Não existe meta nem teto para o tamanho da biblioteca: enquanto 
 viral novo, a produção continua, rodada após rodada. Os limites são só os de uma rodada:
 
 - até **24 prévias** avaliadas;
-- até **8 cortes** montados (o que sobrar fica na fila para a próxima rodada);
+- até **6 cortes** montados (o edit de cada um leva tempo; o que sobrar fica na fila para a próxima rodada);
 - o espaço livre da biblioteca (passo 2).
 
 Comece pelo que viralizou nas últimas 24 horas. Se o dia render menos de 2 cortes, ou se ainda
@@ -128,25 +128,86 @@ O GTA 6 tem muita cena assim e elas rendem clipes. A regra do dono do canal:
 Gancho, título e legenda nunca usam termo sexual, nem nesses clipes. Na dúvida entre duas linhas
 da tabela, escolha a mais conservadora.
 
-## 5. Montar os aprovados
+## 5. Editar os aprovados no formato do canal
 
-Escreva para cada um:
+O formato do **Clipes Leonida** é edit de meme: o clipe vira uma piada montada, com pausa no
+ponto de virada, zoom, legenda de meme, figurinha (GIF) e efeito sonoro. Não tem narrador e não
+tem emoji. O exemplo aprovado pelo dono do canal está em `marca/receita-exemplo.json`: leia antes
+de editar o primeiro clipe da rodada e siga o mesmo espírito.
 
-- **gancho**: a frase fixa na tela. Até 8 palavras, específica do que acontece, cria
-  curiosidade sem entregar o desfecho. Sem palavrão, sem emoji. Não invente fatos.
-  Exemplos do tom: `ELE SÓ FOI CONSERTAR A PIA...`, `O CHAT DEU 1 MINUTO PRA ELE BATER`.
-- **título**: até 70 caracteres, com o nome do streamer e "GTA 6", sem hashtag.
-- **legenda**: 1 ou 2 frases curtas para o texto do post. Conta a situação e termina com uma
-  pergunta que puxe comentário. No máximo 2 emojis, sem hashtag (o código acrescenta), sem
-  palavrão, sem inventar fato.
+O código põe sozinho, em todo corte: a capa no primeiro quadro, a placa do gancho na divisória,
+a etiqueta "DA LIVE DE …" (nunca cite Twitch, Kick ou outra plataforma, em lugar nenhum), o selo
+do canal, o pedido fixo para seguir no canto e a placa de seguir nos segundos finais. O nome é
+**Clipes Leonida**, nunca "Leonida Clipes".
+
+### 5.1 Estudar o clipe
 
 ```bash
-python -m cortes montar N --gancho "..." --titulo "..." --legenda "..."
+python -m cortes base N                          # baixa e gera o corte vertical limpo; diz a duração e a câmera
+python -m cortes quadros trabalho/<nome>.limpo.mp4   # folhas com um quadro a cada meio segundo, cada um com o seu tempo
+python -m cortes falas trabalho/<nome>.limpo.mp4     # o que é dito, com o segundo de cada fala
+```
+
+Abra as folhas e leia as falas. Ache: a **preparação** (o que o streamer queria fazer), a
+**virada** (o segundo exato em que dá errado ou acontece o inesperado), a **reação** do streamer
+(grito, risada, frase boa) e o **desfecho**. Se o clipe não tiver virada clara, descarte:
+piada forçada é pior que clipe nenhum. Se a câmera saiu errada (pedaço do jogo, rosto cortado),
+rode `base` de novo com `--cam x:y:w:h`.
+
+### 5.2 Escrever a receita
+
+A receita é um arquivo JSON com a lista `blocos`, na ordem em que aparecem no vídeo final. Os
+tempos são os do corte limpo. Corte o tempo morto: o vídeo final deve ter de 15 a 40 segundos.
+
+| Bloco | Campos | Para que serve |
+|---|---|---|
+| `{"tipo": "clipe", "de": 9.0, "ate": 15.8}` | trecho do clipe | o grosso do vídeo |
+| `{"tipo": "pausa", "em": 15.8, "dur": 1.7, "alvo": [0.42, 0.66], "zoom": 1.45}` | congela o quadro e dá zoom no `alvo` (frações da tela inteira: x da esquerda, y do topo). Com `"lento": true, "pb": true` vira o final triste em preto e branco | marcar a virada ou fechar a piada |
+| `{"tipo": "rosto", "de": 18.4, "ate": 19.6, "foco": [0.5, 0.66]}` | o rosto do streamer em tela cheia (só quando há câmera); `foco` é onde o rosto está dentro do painel da câmera | a reação |
+
+Qualquer bloco aceita estes enfeites (um objeto ou uma lista; `em` é o segundo do clipe, `atraso`
+conta do início do bloco):
+
+- `"texto": {"texto": "O BOTÃO ERRADO", "pos": "cima|meio|baixo", "cor": "branco|amarelo|rosa", "dur": 2.0}`
+- `"som": "boom"` ou `{"nome": "errou", "atraso": 0.55, "volume": 4.0}`
+- `"meme": {"nome": "errou", "pos": "dir-cima|esq-cima|esq-baixo|dir-baixo", "larg": 400, "dur": 2.0}`
+- `"tremer": 0.5` ou `{"em": 20.95, "dur": 0.6}`
+
+`python -m cortes meme acervo` lista os sons e GIFs prontos. Para um meme específico do clipe,
+procure com `python -m cortes meme sons "termo"` e `python -m cortes meme gifs "termo"` e use o
+endereço devolvido no lugar do nome. Veja o GIF antes de usar (baixe e extraia um quadro).
+
+Regras do edit:
+
+- **Específico, não genérico.** A legenda e o meme têm de ser sobre o que acontece neste clipe.
+  A melhor legenda costuma ser a frase do próprio streamer, entre aspas.
+- **De 3 a 6 enfeites por vídeo.** Um na virada, um na reação, um no fecho; o resto só se couber.
+  Tela poluída mata a piada.
+- **Som no tempo certo.** O efeito entra no quadro exato da virada, não meio segundo depois.
+- Texto sem palavrão, sem termo sexual, sem ofensa a grupo de pessoas e sem inventar fato.
+- Memes e sons de gente real só em tom de brincadeira, nunca para humilhar alguém.
+
+### 5.3 Montar
+
+Escreva também:
+
+- **gancho**: a frase da placa. Até 8 palavras, específica, cria curiosidade sem entregar o
+  desfecho. Sem palavrão, sem emoji.
+- **capa**: o título da capa, até 4 palavras, que entrega a graça (`"APERTOU O BOTÃO ERRADO"`).
+  `--capa-destaque` é a palavra que sai em amarelo; `--capa-tempo` é o segundo do clipe que vira
+  o fundo (o momento mais forte); `--capa-foco` diz onde está a ação no quadro original, de 0
+  (esquerda) a 1 (direita).
+- **título**: até 70 caracteres, com o nome do streamer e "GTA 6", sem hashtag.
+- **legenda**: 1 ou 2 frases curtas para o texto do post, terminando com uma pergunta que puxe
+  comentário. No máximo 2 emojis, sem hashtag (o código acrescenta), sem palavrão.
+
+```bash
+python -m cortes montar N --gancho "..." --titulo "..." --legenda "..." \
+  --receita trabalho/receita-N.json --capa "..." --capa-destaque "..." --capa-tempo 21.3 --capa-foco 0.6
 ```
 
 Se o clipe tiver algo que o dono precisa saber antes de postar (palavrão no áudio ou escrito na
-tela, cam cortada, cena no limite da regra), acrescente `--aviso "..."` com uma frase curta: ela
-aparece na página, ao lado do clipe.
+tela, cena no limite da regra), acrescente `--aviso "..."` com uma frase curta.
 
 **Clipe que precisa de censura.** Monte primeiro sem censura, extraia um quadro por segundo
 do resultado (`ffmpeg -y -v error -i saida/x.mp4 -vf fps=1,scale=270:-1 trabalho/q-%02d.png`) e anote
@@ -166,17 +227,16 @@ Extraia de novo um quadro por segundo e confira **todos** os quadros dos trechos
 deles: se sobrar qualquer nudez visível, aumente o trecho ou troque a tarja por `--censurar`.
 Se não conseguir cobrir tudo, apague o `.mp4` e o `.json` desse corte e descarte o clipe.
 
-Confira um quadro do resultado (`ffmpeg -y -v error -ss 5 -i saida/x.mp4 -frames:v 1 -vf scale=360:-1 q.png`):
-o gancho precisa estar legível e a parte de cima deve mostrar o rosto do streamer. Se a cam
-saiu errada, monte de novo informando a posição dela no vídeo original com `--cam x:y:w:h`
-(meça num quadro do arquivo em `trabalho/`). Se nem assim ficar boa, apague o `.mp4` e o
-`.json` desse corte de `saida/` e siga com os outros.
+### 5.4 Conferir
 
-O nome do canal é **Clipes Leonida** (nunca "Leonida Clipes"). Todo corte sai com o selo do canal
-no canto de cima (a logo do flamingo com o nome em círculo, `marca/selo.png`), posto sozinho pelo
-código; não escreva o nome do canal em texto na tela.
-Nos 3 segundos finais entra sozinha a chamada "SEGUE PRA MAIS / GTA 6 TODO DIA" sobre o jogo
-(`cortes/legendas.py`): não tire e não repita o pedido de seguir no gancho.
+```bash
+python -m cortes quadros saida/<nome>.mp4
+```
+
+Olhe as folhas do vídeo pronto: a capa é o primeiro quadro, o rosto do streamer aparece inteiro
+e sem pedaço do jogo, cada legenda e cada figurinha entram no momento certo e não cobrem o que
+importa. Se algo saiu fora do tempo, ajuste a receita e monte de novo. Se não ficar bom depois
+de duas tentativas, apague o `.mp4`, o `.capa.jpg` e o `.json` desse corte de `saida/` e siga.
 
 ## 6. Fechar o lote
 
@@ -184,8 +244,8 @@ Nos 3 segundos finais entra sozinha a chamada "SEGUE PRA MAIS / GTA 6 TODO DIA" 
 python -m cortes pacote
 ```
 
-Grava em `saida/postar/` o vídeo (`.mp4`) e a capa (`.jpg`) de cada corte novo, já no tamanho
-que a biblioteca aceita. Cortes desta pasta que já foram para a biblioteca ficam de fora
+Grava em `saida/postar/` o vídeo (`.mp4`) e a capa (`.jpg`, a mesma do primeiro quadro) de cada
+corte novo, já no tamanho que a biblioteca aceita. Cortes desta pasta que já foram para a biblioteca ficam de fora
 automaticamente.
 
 ## 7. Colocar na biblioteca

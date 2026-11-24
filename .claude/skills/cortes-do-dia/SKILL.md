@@ -10,7 +10,7 @@ confirmação a cada etapa.
 
 Ajustes que o usuário pode pedir ao chamar a skill:
 
-- **quantidade**: o padrão é o do roteiro (todos os aprovados, até 8 cortes por rodada); se ele
+- **quantidade**: o padrão é o do roteiro (todos os aprovados, até 6 cortes por rodada, no formato de edit de meme); se ele
   pedir um lote maior (por exemplo "20 clipes"),
   monte a fila com `python -m cortes fila --periodo ambos --por-canal 8 --min-semana 120 --total 72`,
   avalie mais prévias (até 4 por corte pedido) e mantenha a variedade de streamers. Para lotes
