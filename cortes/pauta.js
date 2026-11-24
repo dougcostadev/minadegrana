@@ -95,21 +95,24 @@
       reserva();
     }
   }
-  function baixar(botao, c) {
+  function baixar(botao, c, capa) {
+    var rotulo = capa ? "Baixar capa" : "Baixar vídeo";
+    var anexo = capa ? c.capa : c.asset;
+    var nome = capa ? String(c.arquivo || "clipe.mp4").replace(/\.mp4$/, "") + "-capa.jpg" : c.arquivo;
     var voltar = function (texto) {
       botao.textContent = texto;
       botao.disabled = false;
-      setTimeout(function () { botao.textContent = "Baixar vídeo"; }, 3000);
+      setTimeout(function () { botao.textContent = rotulo; }, 3000);
     };
     if (!window.claude || !window.claude.use) { voltar("Use Abrir vídeo"); return; }
     botao.disabled = true;
     botao.textContent = "Preparando…";
     window.claude.use("downloads").then(function (dl) {
       if (!dl) throw { code: "unavailable" };
-      return fetch("/_blob/" + c.asset).then(function (r) {
+      return fetch("/_blob/" + anexo).then(function (r) {
         if (!r.ok) throw { code: "fetch" };
         return r.blob();
-      }).then(function (blob) { return dl.save({ filename: c.arquivo, data: blob }); });
+      }).then(function (blob) { return dl.save({ filename: nome, data: blob }); });
     }).then(function () { voltar("Salvo"); }, function (e) {
       voltar(e && e.code === "declined" ? "Cancelado" : "Não deu: use Abrir vídeo");
     });
@@ -143,7 +146,12 @@
     if (c.asset) {
       var baixa = el("button", { type: "button", class: "baixar", text: "Baixar vídeo" });
       baixa.addEventListener("click", function () { baixar(baixa, c); });
-      lado.appendChild(el("div", { class: "acoes" }, [baixa,
+      var baixaCapa = null;
+      if (c.capa) {
+        baixaCapa = el("button", { type: "button", class: "baixar", text: "Baixar capa" });
+        baixaCapa.addEventListener("click", function () { baixar(baixaCapa, c, true); });
+      }
+      lado.appendChild(el("div", { class: "acoes" }, [baixa, baixaCapa,
         el("a", { class: "abrir", href: "/_blob/" + c.asset, target: "_blank", rel: "noopener", text: "Abrir vídeo" })]));
     } else {
       lado.appendChild(el("p", { class: "sem-video", text: c.video_removido ? "Vídeo apagado depois de postado nas três redes, para liberar espaço. Os textos continuam aqui." : "Este clipe não tem vídeo anexado." }));
