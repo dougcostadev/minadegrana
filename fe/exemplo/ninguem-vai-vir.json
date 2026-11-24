@@ -1,0 +1,121 @@
+{
+ "gancho": "ASSISTA ISSO ANTES\\NDE *DESISTIR*",
+ "frases": [
+  {
+   "texto": "Ninguém vai vir te salvar.",
+   "img": "grande-dia.jpg",
+   "foco": [
+    0.45,
+    0.4
+   ],
+   "aperto": 1.0,
+   "zoom": "in"
+  },
+  {
+   "texto": "E essa é a melhor notícia que você vai ouvir hoje.",
+   "img": "viajante.jpg",
+   "foco": [
+    0.5,
+    0.33
+   ],
+   "aperto": 2.3,
+   "zoom": "out"
+  },
+  {
+   "texto": "Porque significa que a virada depende de você.",
+   "img": "nona-onda.jpg",
+   "foco": [
+    0.4,
+    0.75
+   ],
+   "aperto": 2.0,
+   "zoom": "in",
+   "corte": {
+    "palavra": "depende",
+    "img": "nona-onda.jpg",
+    "foco": [
+     0.45,
+     0.5
+    ],
+    "aperto": 1.1,
+    "zoom": "out"
+   }
+  },
+  {
+   "texto": "Cada vez que você caiu e levantou sozinho, você ficou mais forte.",
+   "img": "grande-dia.jpg",
+   "foco": [
+    0.2,
+    0.85
+   ],
+   "aperto": 2.0,
+   "zoom": "in",
+   "corte": {
+    "palavra": "levantou",
+    "img": "viajante.jpg",
+    "foco": [
+     0.5,
+     0.6
+    ],
+    "aperto": 1.2,
+    "zoom": "in"
+   }
+  },
+  {
+   "texto": "Então para de esperar o momento certo.",
+   "img": "por-do-sol.jpg",
+   "foco": [
+    0.62,
+    0.5
+   ],
+   "aperto": 1.6,
+   "zoom": "in"
+  },
+  {
+   "texto": "Levanta.",
+   "img": "viajante.jpg",
+   "foco": [
+    0.5,
+    0.28
+   ],
+   "aperto": 2.6,
+   "zoom": "in",
+   "entrada": "soco",
+   "estilo": "impacto",
+   "pausa": 0.45
+  },
+  {
+   "texto": "O topo não é pra quem nunca caiu.",
+   "img": "grande-dia.jpg",
+   "foco": [
+    0.6,
+    0.25
+   ],
+   "aperto": 1.3,
+   "zoom": "in"
+  },
+  {
+   "texto": "É pra quem não parou de subir.",
+   "img": "viajante.jpg",
+   "foco": [
+    0.5,
+    0.6
+   ],
+   "aperto": 1.1,
+   "zoom": "in",
+   "pausa": 0.5
+  },
+  {
+   "texto": "Salva esse vídeo pra ver no dia difícil.",
+   "img": "nona-onda.jpg",
+   "foco": [
+    0.55,
+    0.4
+   ],
+   "aperto": 1.0,
+   "zoom": "out",
+   "estilo": "cta"
+  }
+ ],
+ "saida": "ninguem-vai-vir.mp4"
+}
