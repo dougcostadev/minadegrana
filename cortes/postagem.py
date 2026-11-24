@@ -35,8 +35,31 @@ def _tag(canal):
     return "#" + re.sub(r"[^a-z0-9]", "", nome(canal).lower())
 
 
+TAGS_PADRAO = {"tiktok": ["#creatorsearchinsights"], "instagram": []}
+
+
+def tags_do_dia(saida="saida"):
+    """Hashtags em alta do dia, gravadas pela rodada em saida/tags.json; sem o arquivo, as de sempre."""
+    try:
+        with open(os.path.join(saida, "tags.json"), encoding="utf-8") as f:
+            d = json.load(f)
+    except (OSError, ValueError):
+        d = {}
+    limpa = lambda t: "#" + re.sub(r"[^a-z0-9_]", "", str(t).lower())
+    return {rede: [limpa(t) for t in (d.get(rede) or TAGS_PADRAO[rede]) if len(limpa(t)) > 2][:4] for rede in TAGS_PADRAO}
+
+
+def _hashtags(fixas, extras, teto=7):
+    vistas = []
+    for t in fixas + extras:
+        if t not in vistas:
+            vistas.append(t)
+    return " ".join(vistas[:teto])
+
+
 def textos(m):
     """Título, descrição, legenda e tags prontos para colar em cada rede."""
+    dia = tags_do_dia()
     canal = nome(m["canal_original"])
     titulo = m.get("titulo_base") or re.sub(r"\s*😱?\s*#.*$", "", m.get("titulo", "")).strip()
     legenda = m.get("legenda") or titulo
@@ -50,9 +73,9 @@ def textos(m):
             "tags": f"gta 6, gta vi, gta 6 gameplay, gta 6 brasil, {canal}, {canal} gta 6, cortes gta 6, "
                     "momentos engraçados gta 6",
         },
-        "tiktok": f"{legenda} 🎮 {canal}\n#gta6 #gtavi {tag} #gta6brasil #cortes",
+        "tiktok": f"{legenda} 🎮 {canal}\n" + _hashtags(["#gta6", "#gtavi", tag], dia["tiktok"] + ["#gta6brasil", "#cortes"]),
         "instagram": (f"{legenda}\n\n🎮 Corte da live de {canal}. Segue o perfil para ver o melhor do GTA 6 todo dia.\n\n"
-                      f"#gta6 #gtavi {tag} #gta6brasil #cortes"),
+                      + _hashtags(["#gta6", "#gtavi", tag], dia["instagram"] + ["#gta6brasil", "#cortes"])),
     }
 
 

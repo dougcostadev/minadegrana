@@ -76,6 +76,22 @@ Instagram). Só desses clipes, e só o vídeo: capa, textos e marcações ficam.
    junto com o teto de 8. Se não couber nenhum, não avalie nem monte nada: vá direto ao passo 8
    e avise no resumo que a biblioteca está cheia e que é preciso postar ou descartar clipes.
 
+**Hashtags do dia.** Os textos de TikTok e Instagram levam hashtags em alta, renovadas uma vez
+por dia e guardadas no documento `estado/tags` do banco:
+
+8. `ArtifactData` com `action: "get"`, `collection: "estado"`, `doc_id: "tags"`,
+   `out_dir: "<caminho absoluto>/trabalho/db"`. Anote a `version`.
+9. Se o campo `dia` do documento **não** for a data de hoje (fuso de Brasília), renove: faça até
+   duas buscas na web (assuntos de GTA 6 das últimas 48 horas e hashtags de GTA 6 em alta no
+   TikTok) e escolha **até 3 hashtags** ligadas ao que está em alta hoje (trailer, atualização,
+   personagem, meme do momento), todas em minúsculas e sem acento. Grave o documento com
+   `action: "set"` e `if_version`, neste formato:
+   `{"dia": "AAAA-MM-DD", "tiktok": ["#creatorsearchinsights", "#...", "#..."], "instagram": ["#...", "#..."], "porque": "uma linha"}`.
+   `#creatorsearchinsights` fica sempre na lista do TikTok. Se as buscas não derem nada confiável,
+   repita as de ontem trocando só o `dia`. Hashtag nunca cita outra plataforma.
+10. `python -m cortes tags trabalho/db/estado/tags.json` (se você regravou, salve antes o mesmo
+    conteúdo nesse arquivo). A partir daí todo `montar` já usa as hashtags do dia.
+
 ## 3. Montar a fila do dia
 
 ```bash

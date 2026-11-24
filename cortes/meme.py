@@ -20,7 +20,7 @@ ACERVO = os.path.join(RAIZ, "memes.json")
 UA = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/126 Safari/537.36"}
 CORES = {"branco": "&HFFFFFF&", "amarelo": "&H1FC2FF&", "rosa": "&H7E2EFF&"}
 ALTURA_TEXTO = {"cima": 820, "meio": 1180, "baixo": 1480}  # acima da área que o texto dos aplicativos cobre
-CANTO = {"dir-cima": (1, 700), "esq-cima": (0, 700), "esq-baixo": (0, 1380), "dir-baixo": (1, 1380)}
+CANTO = {"dir-cima": (1, 760), "esq-cima": (0, 760), "esq-baixo": (0, 1380), "dir-baixo": (1, 1380)}  # abaixo da etiqueta de seguir
 ENC = ["-r", str(FPS), "-c:v", "libx264", "-preset", "fast", "-crf", "16", "-pix_fmt", "yuv420p",
        "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2"]
 

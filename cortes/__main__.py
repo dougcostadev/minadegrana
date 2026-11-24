@@ -92,6 +92,8 @@ def main():
     qd.add_argument("--fps", type=float, default=2)
     fa = sub.add_parser("falas", help="transcrição do vídeo com o segundo de cada frase")
     fa.add_argument("arquivo")
+    tg = sub.add_parser("tags", help="carrega as hashtags do dia (documento estado/tags do banco) para os textos dos posts")
+    tg.add_argument("arquivo", nargs="?")
     me = sub.add_parser("meme", help="acervo e busca de sons e GIFs de meme")
     me.add_argument("acao", choices=["acervo", "sons", "gifs"])
     me.add_argument("termo", nargs="?")
@@ -214,6 +216,18 @@ def main():
                 linha, t0 = [], None
         if linha:
             print(f"{t0:6.1f} -         {' '.join(linha)}")
+        return
+    if a.cmd == "tags":
+        from . import postagem
+        if a.arquivo:
+            with open(a.arquivo, encoding="utf-8") as f:
+                d = json.load(f)
+            d = d.get("data") if isinstance(d.get("data"), dict) else d   # aceita o documento com ou sem envelope
+            os.makedirs("saida", exist_ok=True)
+            with open("saida/tags.json", "w", encoding="utf-8") as f:
+                json.dump({k: d.get(k) or [] for k in ("tiktok", "instagram")} | {"dia": d.get("dia")}, f, ensure_ascii=False)
+        for rede, tags in postagem.tags_do_dia().items():
+            print(f"{rede}: {' '.join(tags) or '(nenhuma extra)'}")
         return
     if a.cmd == "meme":
         from . import meme
