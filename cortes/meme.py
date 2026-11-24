@@ -214,9 +214,16 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         entradas += ["-i", chamada]
         fc.append(f"[{v}][{n}:v]overlay=0:0:enable='gte(t,{troca:.2f})'[cha]")
         v, n = "cha", n + 1
-        if estalo:  # a entrada da chamada pisca em rosa por um instante
-            entradas += ["-i", estalo]
-            fc.append(f"[{v}][{n}:v]overlay=0:0:enable='between(t,{troca:.2f},{troca + 0.3:.2f})'[est]")
+        if estalo:
+            # entrada elegante: a placa surge em rosa um pouco maior, assenta no tamanho certo e se
+            # dissolve na versão escura (em vez de piscar)
+            meio = A_CAM if com_cam else 190
+            topo = max(0, meio - 150)
+            cresce = f"(1+0.09*max(0,1-(t-{troca:.2f})/0.28))"
+            entradas += ["-loop", "1", "-framerate", str(FPS), "-t", f"{total:.2f}", "-i", estalo]
+            fc.append(f"[{n}:v]format=rgba,crop={L}:300:0:{topo},scale=w='trunc({L}*{cresce}/2)*2':h='trunc(300*{cresce}/2)*2':eval=frame,"
+                      f"fade=t=out:st={troca + 0.45:.2f}:d=0.65:alpha=1[rosa]")
+            fc.append(f"[{v}][rosa]overlay=x='(W-w)/2':y='{topo + 150}-h/2':enable='between(t,{troca:.2f},{troca + 1.15:.2f})'[est]")
             v, n = "est", n + 1
     if capa:
         entradas += ["-i", capa]
