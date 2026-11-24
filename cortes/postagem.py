@@ -36,6 +36,7 @@ def _tag(canal):
 
 
 TAGS_PADRAO = {"tiktok": ["#creatorsearchinsights"], "instagram": []}
+TAGS_TIKTOK = "#gta6 #creatorsearchinsights"
 
 
 def tags_do_dia(saida="saida"):
@@ -73,7 +74,8 @@ def textos(m):
             "tags": f"gta 6, gta vi, gta 6 gameplay, gta 6 brasil, {canal}, {canal} gta 6, cortes gta 6, "
                     "momentos engraçados gta 6",
         },
-        "tiktok": f"{legenda} 🎮 {canal}\n" + _hashtags(["#gta6", "#gtavi", tag], dia["tiktok"] + ["#gta6brasil", "#cortes"]),
+        # no TikTok só duas: o dono do canal viu que duas hashtags entregam mais do que dez
+        "tiktok": f"{legenda} 🎮 {canal}\n{TAGS_TIKTOK}",
         "instagram": (f"{legenda}\n\n🎮 Corte da live de {canal}. Segue o perfil para ver o melhor do GTA 6 todo dia.\n\n"
                       + _hashtags(["#gta6", "#gtavi", tag], dia["instagram"] + ["#gta6brasil", "#cortes"])),
     }

@@ -76,8 +76,10 @@ Instagram). Só desses clipes, e só o vídeo: capa, textos e marcações ficam.
    junto com o teto de 8. Se não couber nenhum, não avalie nem monte nada: vá direto ao passo 8
    e avise no resumo que a biblioteca está cheia e que é preciso postar ou descartar clipes.
 
-**Hashtags do dia.** Os textos de TikTok e Instagram levam hashtags em alta, renovadas uma vez
-por dia e guardadas no documento `estado/tags` do banco:
+**Hashtags do dia.** No TikTok o texto leva sempre só duas hashtags, `#gta6 #creatorsearchinsights`
+(o dono do canal viu que duas entregam mais do que dez): o código já faz isso e a lista `tiktok`
+abaixo não muda esse texto. No Instagram entram as hashtags em alta, renovadas uma vez por dia e
+guardadas no documento `estado/tags` do banco:
 
 8. `ArtifactData` com `action: "get"`, `collection: "estado"`, `doc_id: "tags"`,
    `out_dir: "<caminho absoluto>/trabalho/db"`. Anote a `version`.
