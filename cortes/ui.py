@@ -83,8 +83,26 @@ def _etiqueta(img, streamer, cx, y_base, para_cima=True):
 FIXO = ("ENTRA PRA LEONIDA", "SEGUE E NÃO FICA DE FORA")
 
 
+def _seguir_na_placa(img, cx, y_base):
+    """Pedido fixo para seguir como etiqueta amarela pendurada embaixo da placa do gancho.
+
+    Fica na divisória, sobre o começo do jogo: nunca cobre o rosto de quem está na câmera.
+    """
+    f1, f2 = ImageFont.truetype(FORTE, 31), ImageFont.truetype(MEDIA, 26)
+    a, b = FIXO[0] + "  ·  ", FIXO[1]
+    larg, alt = int(f1.getlength(a) + f2.getlength(b)) + 2 * 28, 60
+    x0, y0 = cx - larg // 2, y_base - 10
+    m = Image.new("L", (larg, alt), 0)
+    ImageDraw.Draw(m).rounded_rectangle((0, 0, larg - 1, alt - 1), 18, fill=255)
+    img.paste(_degrade(larg, alt, (AMARELO, LARANJA)), (x0, y0), m)
+    d = ImageDraw.Draw(img)
+    meio = y0 + 10 + (alt - 10) // 2
+    d.text((x0 + 28, meio), a, font=f1, fill=NOITE, anchor="lm")
+    d.text((x0 + 28 + f1.getlength(a), meio), b, font=f2, fill=NOITE, anchor="lm")
+
+
 def _seguir(img, com_cam):
-    """Pedido para seguir, fixo no canto de cima à direita o vídeo inteiro (espelha o selo, longe do rosto)."""
+    """Pedido para seguir em cartão solto, usado só no formato sem câmera (ali não há rosto para cobrir)."""
     f1, f2 = ImageFont.truetype(FORTE, 31), ImageFont.truetype(MEDIA, 20)
     larg, alt = int(max(f1.getlength(FIXO[0]), f2.getlength(FIXO[1]))) + 2 * 24, 88
     x0, y0 = L - 28 - larg, (199 if com_cam else 356)
@@ -143,7 +161,8 @@ def chamada(destino, frase=None, indice=0, com_cam=True, estalo=False):
     meio = (caixa[1] + caixa[3]) // 2
     d.text((L // 2, meio - alt_linha // 2), l1, font=f, fill=BRANCO, anchor="mm")
     d.text((L // 2, meio + alt_linha // 2), l2, font=f, fill=BRANCO if estalo else AMARELO, anchor="mm")
-    _seguir(img, com_cam)
+    if not com_cam:
+        _seguir(img, com_cam)
     if os.path.exists(SELO):
         sx, sy, lado = (28, 168, 150) if com_cam else (28, 330, 140)
         img.alpha_composite(Image.open(SELO).convert("RGBA").resize((lado, lado), Image.LANCZOS), (sx, sy))
@@ -175,6 +194,8 @@ def moldura(destino, gancho=None, streamer=None, com_cam=True):
         caixa = ((L - larg) // 2, centro - alt // 2, (L + larg) // 2, centro + alt // 2)
     if streamer:  # desenhada antes da placa, que cobre a ponta dela
         _etiqueta(img, streamer, L // 2, caixa[1] if com_cam else caixa[3], para_cima=com_cam)
+    if com_cam:
+        _seguir_na_placa(img, L // 2, caixa[3])
     if gancho:
         _placa(img, caixa, raio=34)
         d = ImageDraw.Draw(img)
@@ -183,7 +204,8 @@ def moldura(destino, gancho=None, streamer=None, com_cam=True):
             d.text((L // 2, y), p, font=f, fill=BRANCO, anchor="mm")
             y += alt_linha
 
-    _seguir(img, com_cam)
+    if not com_cam:
+        _seguir(img, com_cam)
     if os.path.exists(SELO):  # selo do canal sozinho no canto de cima
         sx, sy, lado = (28, 168, 150) if com_cam else (28, 330, 140)
         img.alpha_composite(Image.open(SELO).convert("RGBA").resize((lado, lado), Image.LANCZOS), (sx, sy))
