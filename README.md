@@ -116,7 +116,7 @@ crédito que o `.json` já gera e edite o título/gancho de cada corte antes de 
 
 ## Canal de fé e motivacional (`fe/`)
 
-Um segundo canal, separado dos Clipes Leonida: vídeos verticais de 22 a 32 s com narração na voz B
+Um segundo canal, separado dos Clipes Leonida: vídeos verticais para o TikTok, de 22 a 32 s, com narração na voz B
 (OmniVoice, `vozes/vozes.json`), pinturas em domínio público com zoom lento, legenda palavra a
 palavra e versículo real. Saem sem música, porque o som em alta entra na hora de postar.
 

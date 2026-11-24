@@ -1,5 +1,5 @@
 """Página da biblioteca do canal de fé: a mesma estante da biblioteca do Clipes Leonida (cortes/pauta.*),
-adaptada para duas redes (TikTok e Instagram), tema no lugar de streamer e paleta dourada.
+adaptada para uma rede só (TikTok), tema no lugar de streamer e paleta dourada.
 
 Ela lê tudo do próprio banco (coleção `videos`), então só é republicada quando o layout muda.
 """
@@ -10,18 +10,15 @@ CORTES = os.path.join(os.path.dirname(AQUI), "cortes")
 
 GUIA = [
     ("Antes de postar", [
-        "Baixe o vídeo e poste o arquivo original em cada rede. Vídeo repostado com marca d'água de outra rede perde alcance.",
-        "Escolha um som em alta no próprio app e deixe o volume dele baixo (uns 10 a 15%), para a voz continuar clara.",
+        "Baixe o vídeo e poste o arquivo original. Vídeo repostado com marca d'água de outra rede perde alcance.",
+        "Escolha um som em alta no próprio TikTok e deixe o volume dele baixo (uns 10 a 15%), para a voz continuar clara.",
         "Ative a marcação de conteúdo gerado por IA: a voz é sintética.",
     ]),
-    ("TikTok", [
+    ("No TikTok", [
         "A legenda pronta já tem o gancho, o pedido de comentário e as hashtags. Cole sem mudar a primeira linha.",
         "Use a capa (primeiro quadro) com o gancho grande escrito.",
         "Responda os primeiros comentários de \"amém\" ou \"eu creio\" na primeira hora: comentário puxa entrega.",
-    ]),
-    ("Instagram Reels", [
-        "Poste como Reel com a mesma legenda e compartilhe nos Stories logo depois.",
-        "Fixe um comentário com o versículo completo quando o vídeo tiver um.",
+        "Depois de marcar como postado, o arquivo do vídeo sai da biblioteca na rodada seguinte, para liberar espaço. Os textos ficam.",
     ]),
 ]
 
@@ -32,23 +29,27 @@ TROCAS = {
         ("<h1>Biblioteca de clipes</h1>", "<h1>Biblioteca de vídeos</h1>"),
         ("Carregando os clipes…", "Carregando os vídeos…"),
         ('    <button type="button" class="seg seg-yt" data-rede="yt">YouTube <span class="n" id="n-yt"></span></button>\n', ""),
+        ('    <button type="button" class="seg seg-ig" data-rede="ig">Instagram <span class="n" id="n-ig"></span></button>\n', ""),
+        ('<div class="grupo" role="group" aria-label="Rede">', '<div class="grupo" role="group" aria-label="Rede" hidden>'),
         ('placeholder="streamer ou palavra do gancho"', 'placeholder="palavra do gancho ou versículo"'),
         ('<label class="rotulo-campo" for="streamer">Streamer', '<label class="rotulo-campo" for="streamer">Tema'),
         ('        <option value="vistos">Mais vistos na live</option>\n', ""),
     ],
     "cortes/pauta.js": [
         ('    { k: "yt", curto: "YT", nome: "YouTube", campos: function (r) { return [["Título", r.youtube.titulo], ["Descrição", r.youtube.descricao], ["Tags", r.youtube.tags]]; } },\n', ""),
+        ('    { k: "tt", curto: "TT", nome: "TikTok", campos: function (r) { return [["Legenda", r.tiktok]]; } },\n    { k: "ig", curto: "IG", nome: "Instagram", campos: function (r) { return [["Legenda", r.instagram]]; } }',
+         '    { k: "tt", curto: "TikTok", nome: "TikTok", campos: function (r) { return [["Legenda", r.tiktok]]; } }'),
         ('var FAIXAS = ["livres", "feitos", "descartados"], ORDENS = ["novos", "vistos", "curtos"];',
          'var FAIXAS = ["livres", "feitos", "descartados"], ORDENS = ["novos", "curtos"];'),
         ('localStorage.getItem("biblioteca-ver")', 'localStorage.getItem("biblioteca-fe-ver")'),
         ('localStorage.setItem("biblioteca-ver"', 'localStorage.setItem("biblioteca-fe-ver"'),
-        ("return rede === \"todas\" ? !(p.yt && p.tt && p.ig) : !p[rede];", "return rede === \"todas\" ? !(p.tt && p.ig) : !p[rede];"),
+        ("return rede === \"todas\" ? !(p.yt && p.tt && p.ig) : !p[rede];", "return rede === \"todas\" ? !p.tt : !p[rede];"),
         ('if (c.views) partes.push(Number(c.views).toLocaleString("pt-BR") + " views na live");',
          'if (c.versiculo) partes.push(c.versiculo);'),
         ('return db.doc("cortes/" + x.id).update(patch);', 'return db.doc("videos/" + x.id).update(patch);'),
         ('String(c.arquivo || "clipe.mp4")', 'String(c.arquivo || "video.mp4")'),
         ('"Vídeo apagado depois de postado nas três redes, para liberar espaço. Os textos continuam aqui." : "Este clipe não tem vídeo anexado."',
-         '"Vídeo apagado depois de postado nas duas redes, para liberar espaço. Os textos continuam aqui." : "Este vídeo não tem arquivo anexado."'),
+         '"Vídeo apagado depois de postado no TikTok, para liberar espaço. Os textos continuam aqui." : "Este vídeo não tem arquivo anexado."'),
         ('text: c.descartado ? "Restaurar clipe" : "Descartar clipe"', 'text: c.descartado ? "Restaurar vídeo" : "Descartar vídeo"'),
         ('"aria-label": "Clipe selecionado"', '"aria-label": "Vídeo selecionado"'),
         ('semAcento((x.c.gancho || "") + " " + (x.c.titulo_base || "") + " " + (x.c.nome || ""))',
@@ -57,7 +58,7 @@ TROCAS = {
         ('feitos: ["Nenhum clipe postado com esse filtro.", "já postados"]', 'feitos: ["Nenhum vídeo postado com esse filtro.", "já postados"]'),
         ('descartados: ["Nenhum clipe descartado.", "descartados (dá para restaurar)"]', 'descartados: ["Nenhum vídeo descartado.", "descartados (dá para restaurar)"]'),
         ('" clipes prontos · " + (ativos.length - todosPostados) + " com rede faltando · " + todosPostados + " postados nas três redes"',
-         '" vídeos prontos · " + (ativos.length - todosPostados) + " com rede faltando · " + todosPostados + " postados nas duas redes"'),
+         '" vídeos · " + (ativos.length - todosPostados) + " para postar · " + todosPostados + " já postados no TikTok"'),
         ('(itens.length === 1 ? " clipe " : " clipes ")', '(itens.length === 1 ? " vídeo " : " vídeos ")'),
         ('". Toque num clipe para ver o vídeo e os textos."', '". Toque num vídeo para ver e copiar os textos."'),
         ('avisar("A biblioteca está vazia. Os clipes de cada rodada aparecem aqui, com o vídeo para baixar e os textos de cada rede.");',

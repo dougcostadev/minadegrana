@@ -2,7 +2,7 @@
 
 python -m fe produzir fe/roteiros/hoje/*.json     voz + vídeo + capa + textos, em saida-fe/
 python -m fe linhas saida-fe/assets.json         documentos da biblioteca (saida-fe/lote.json)
-python -m fe limpeza <pasta com os docs>         vídeos já postados nas duas redes que podem sair
+python -m fe limpeza <pasta com os docs>         vídeos já postados no TikTok, cujo arquivo pode sair
 python -m fe imagens                             banco de pinturas, com descrição e pontos de foco
 python -m fe ver <imagem>                        miniatura com grade de coordenadas para escolher o foco
 python -m fe imagem <nome> "<File:... do Wikimedia Commons>" "<descrição>"   baixa e cadastra uma pintura
@@ -29,7 +29,7 @@ def textos(rot):
     tags = rot.get("hashtags") or TAGS.get(rot.get("tema", "fe"), TAGS["fe"])
     tags = " ".join(t if t.startswith("#") else "#" + t for t in tags[:7])
     leg = rot.get("legenda", "").strip()
-    return {"tiktok": f"{leg}\n\n{tags}".strip(), "instagram": f"{leg}\n\n{tags}".strip()}
+    return {"tiktok": f"{leg}\n\n{tags}".strip()}  # o canal posta só no TikTok
 
 
 def produzir(arquivos, saida=SAIDA):
@@ -82,7 +82,7 @@ def linhas(mapa_arq, saida=SAIDA):
                "nome": "Motivacional" if m["tema"] == "motivacional" else "Fé",
                "asset": mapa.get(m["arquivo"]), "capa": mapa.get(m["arquivo"][:-4] + ".jpg"),
                "aviso": m.get("aviso"),  # nota para quem posta; os avisos de transcrição ficam só com o agente
-               "criado_em": datetime.now(FUSO).isoformat(timespec="seconds"), "postado": {"tt": False, "ig": False}}
+               "criado_em": datetime.now(FUSO).isoformat(timespec="seconds"), "postado": {"tt": False}}
         caminho = os.path.abspath(os.path.join(pasta, m["id"] + ".json"))
         json.dump(doc, open(caminho, "w", encoding="utf-8"), ensure_ascii=False)
         writes.append({"op": "set", "collection": "videos", "doc_id": m["id"], "file_path": caminho})
@@ -96,7 +96,7 @@ def limpeza(pasta):
         d = json.load(open(arq, encoding="utf-8"))
         if not isinstance(d, dict): continue
         p = d.get("postado") or {}
-        if p.get("tt") and p.get("ig"):
+        if p.get("tt"):  # o canal posta só no TikTok
             if d.get("asset"): apagar.append({"doc_id": os.path.basename(arq)[:-5], "asset": d["asset"]})
         elif not d.get("descartado"):
             livres += 1
