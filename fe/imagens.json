@@ -1,0 +1,346 @@
+{
+ "tempestade.jpg": {
+  "descricao": "Rembrandt, Cristo na tempestade no mar da Galileia (1633). Barco inclinado em ondas enormes, céu escuro, discípulos desesperados.",
+  "fonte": "Wikimedia Commons, domínio público",
+  "pontos": {
+   "barco inteiro": [
+    [
+     0.35,
+     0.5
+    ],
+    1.0
+   ],
+   "vela e onda": [
+    [
+     0.4,
+     0.35
+    ],
+    1.6
+   ],
+   "discípulos no barco": [
+    [
+     0.42,
+     0.72
+    ],
+    2.0
+   ],
+   "popa escura": [
+    [
+     0.5,
+     0.82
+    ],
+    2.6
+   ]
+  }
+ },
+ "tempestade-dore.jpg": {
+  "descricao": "Gustave Doré, Jesus acalma a tempestade (gravura, preto e branco). Barco no meio de ondas, figuras agitadas.",
+  "fonte": "Wikimedia Commons, domínio público",
+  "pontos": {
+   "barco": [
+    [
+     0.5,
+     0.45
+    ],
+    1.25
+   ],
+   "figuras com auréola": [
+    [
+     0.3,
+     0.5
+    ],
+    1.8
+   ]
+  }
+ },
+ "filho-prodigo.jpg": {
+  "descricao": "Rembrandt, O retorno do filho pródigo (c. 1668). Pai de manto vermelho abraça o filho ajoelhado; fundo escuro.",
+  "fonte": "Wikimedia Commons, domínio público",
+  "pontos": {
+   "rosto do pai": [
+    [
+     0.35,
+     0.3
+    ],
+    1.4
+   ],
+   "mãos nas costas do filho": [
+    [
+     0.32,
+     0.5
+    ],
+    2.2
+   ],
+   "cena toda": [
+    [
+     0.45,
+     0.5
+    ],
+    1.0
+   ]
+  }
+ },
+ "viajante.jpg": {
+  "descricao": "Caspar David Friedrich, O viajante sobre o mar de névoa (1818). Homem de costas no alto da rocha olhando o mar de névoa.",
+  "fonte": "Wikimedia Commons, domínio público",
+  "pontos": {
+   "homem inteiro": [
+    [
+     0.5,
+     0.45
+    ],
+    1.0
+   ],
+   "cabeça de costas": [
+    [
+     0.5,
+     0.36
+    ],
+    2.6
+   ],
+   "névoa e montanhas": [
+    [
+     0.75,
+     0.3
+    ],
+    1.6
+   ],
+   "rocha": [
+    [
+     0.5,
+     0.75
+    ],
+    1.3
+   ]
+  }
+ },
+ "por-do-sol.jpg": {
+  "descricao": "Caspar David Friedrich, Mulher diante do sol poente (c. 1818). Mulher de costas, braços abertos, céu dourado.",
+  "fonte": "Wikimedia Commons, domínio público",
+  "pontos": {
+   "mulher": [
+    [
+     0.62,
+     0.5
+    ],
+    1.2
+   ],
+   "mulher de perto": [
+    [
+     0.62,
+     0.45
+    ],
+    1.8
+   ],
+   "céu dourado": [
+    [
+     0.3,
+     0.3
+    ],
+    1.3
+   ]
+  }
+ },
+ "nona-onda.jpg": {
+  "descricao": "Ivan Aivazovsky, A nona onda (1850). Náufragos num mastro diante de ondas gigantes, sol rompendo as nuvens.",
+  "fonte": "Wikimedia Commons, domínio público",
+  "pontos": {
+   "onda e sol": [
+    [
+     0.55,
+     0.4
+    ],
+    1.0
+   ],
+   "náufragos": [
+    [
+     0.45,
+     0.78
+    ],
+    2.0
+   ],
+   "sol": [
+    [
+     0.62,
+     0.35
+    ],
+    1.4
+   ]
+  }
+ },
+ "lazaro.jpg": {
+  "descricao": "Rembrandt, A ressurreição de Lázaro. Jesus de braço erguido diante do túmulo, Lázaro se levantando, gente espantada.",
+  "fonte": "Wikimedia Commons, domínio público",
+  "pontos": {
+   "Jesus de braço erguido": [
+    [
+     0.42,
+     0.3
+    ],
+    1.6
+   ],
+   "Lázaro saindo do túmulo": [
+    [
+     0.65,
+     0.75
+    ],
+    1.8
+   ],
+   "cena toda": [
+    [
+     0.45,
+     0.5
+    ],
+    1.0
+   ]
+  }
+ },
+ "ressurreicao.jpg": {
+  "descricao": "Carl Bloch, A ressurreição (1873). Cristo saindo do túmulo de braços abertos, luz forte, anjos ajoelhados.",
+  "fonte": "Wikimedia Commons, domínio público",
+  "pontos": {
+   "Cristo inteiro": [
+    [
+     0.5,
+     0.35
+    ],
+    1.2
+   ],
+   "rosto e auréola": [
+    [
+     0.5,
+     0.22
+    ],
+    2.3
+   ],
+   "anjos": [
+    [
+     0.5,
+     0.7
+    ],
+    1.3
+   ]
+  }
+ },
+ "cristo-crianca.jpg": {
+  "descricao": "Carl Bloch, Cristo e a criança. Jesus de branco com a mão na cabeça de uma criança.",
+  "fonte": "Wikimedia Commons, domínio público",
+  "pontos": {
+   "rosto de Jesus": [
+    [
+     0.5,
+     0.25
+    ],
+    2.0
+   ],
+   "mão na cabeça da criança": [
+    [
+     0.4,
+     0.55
+    ],
+    2.1
+   ],
+   "os dois": [
+    [
+     0.5,
+     0.4
+    ],
+    1.3
+   ]
+  }
+ },
+ "grande-dia.jpg": {
+  "descricao": "John Martin, O grande dia da sua ira (1851). Fim do mundo: montanhas desabando, fogo vermelho, céu em fúria.",
+  "fonte": "Wikimedia Commons, domínio público",
+  "pontos": {
+   "fogo e céu": [
+    [
+     0.6,
+     0.25
+    ],
+    1.3
+   ],
+   "abismo": [
+    [
+     0.45,
+     0.4
+    ],
+    1.0
+   ],
+   "pessoas caindo": [
+    [
+     0.2,
+     0.85
+    ],
+    2.0
+   ]
+  }
+ },
+ "lua-mar.jpg": {
+  "descricao": "Caspar David Friedrich, Nascer da lua no mar (1822). Três pessoas sentadas na pedra olhando o mar calmo ao entardecer.",
+  "fonte": "Wikimedia Commons, domínio público",
+  "pontos": {
+   "pessoas na pedra": [
+    [
+     0.5,
+     0.5
+    ],
+    1.1
+   ],
+   "mar calmo": [
+    [
+     0.5,
+     0.45
+    ],
+    1.3
+   ]
+  }
+ },
+ "rosto-cristo.jpg": {
+  "descricao": "Paul Delaroche, estudo para a cabeça de Cristo. Perfil sereno de Jesus, fundo escuro. Ótimo para abrir com close.",
+  "fonte": "Wikimedia Commons, domínio público",
+  "pontos": {
+   "olho (close extremo)": [
+    [
+     0.42,
+     0.4
+    ],
+    2.6
+   ],
+   "rosto": [
+    [
+     0.45,
+     0.45
+    ],
+    1.4
+   ]
+  }
+ },
+ "transfiguracao.jpg": {
+  "descricao": "Carl Bloch, A transfiguração (1872). Jesus em luz branca no alto, discípulos caídos olhando, muita claridade.",
+  "fonte": "Wikimedia Commons, domínio público",
+  "pontos": {
+   "Jesus na luz": [
+    [
+     0.55,
+     0.3
+    ],
+    1.4
+   ],
+   "discípulos": [
+    [
+     0.35,
+     0.75
+    ],
+    1.6
+   ],
+   "cena toda": [
+    [
+     0.5,
+     0.4
+    ],
+    1.0
+   ]
+  }
+ }
+}

@@ -1,3 +1,5 @@
+"""Nota automática de qualidade de cada .wav (MOS estimado, STOI, PESQ, tom). Não substitui ouvir.
+Uso: $FE_PY fe/avaliar.py fala1.wav fala2.wav ..."""
 import sys, glob, torch, torchaudio
 import torchaudio.functional as F
 from torchaudio.pipelines import SQUIM_SUBJECTIVE, SQUIM_OBJECTIVE
@@ -7,7 +9,7 @@ def carrega(p):
     x, sr = sf.read(p, dtype="float32", always_2d=True)
     x = torch.from_numpy(x.T).mean(0, keepdim=True)
     return F.resample(x, sr, 16000)
-ref = carrega("/home/user/debpalash/voicestudio/backend/assets/samples/demo_voice.wav")[:, :16000*8]
+ref = carrega(__import__("os").path.join(__import__("os").environ.get("FE_DIR", __import__("os").path.expanduser("~/.fe")), "VoiceStudio/backend/assets/samples/demo_voice.wav"))[:, :16000*8]
 for p in sorted(sys.argv[1:]):
     x = carrega(p)
     with torch.no_grad():

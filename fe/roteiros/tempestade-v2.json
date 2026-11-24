@@ -1,4 +1,8 @@
 {
+ "id": "tempestade-v2",
+ "tema": "fe",
+ "versiculo": "Marcos 4:39",
+ "legenda": "O barco afundando… e Jesus dormindo. Com uma palavra, o vento parou. 🌊\nA sua tempestade também conhece a voz dele. Se você crê, escreve EU CREIO.\n\n(Marcos 4:37-39)",
  "gancho": "O QUE JESUS FEZ\\NNA *TEMPESTADE*",
  "frases": [
   {
@@ -20,7 +24,6 @@
    ],
    "aperto": 1.8,
    "zoom": "in",
-   "entrada": "soco",
    "estilo": "impacto",
    "pausa": 0.45
   },
@@ -73,7 +76,6 @@
    ],
    "aperto": 1.4,
    "zoom": "in",
-   "entrada": "soco",
    "estilo": "versiculo",
    "tela": "\"ACALMA-TE,\nEMUDECE!\"\n\nMARCOS 4:39",
    "pausa": 0.5
@@ -121,6 +123,5 @@
    "zoom": "out",
    "estilo": "cta"
   }
- ],
- "saida": "tempestade-v2.mp4"
+ ]
 }

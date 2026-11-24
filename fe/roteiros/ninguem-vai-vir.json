@@ -1,4 +1,8 @@
 {
+ "id": "ninguem-vai-vir",
+ "tema": "motivacional",
+ "versiculo": null,
+ "legenda": "Ninguém vai vir te salvar. E essa é a melhor notícia que você vai ouvir hoje. 💪\nSalva esse vídeo pra ver no dia difícil e manda pra quem precisa ouvir isso.",
  "gancho": "ASSISTA ISSO ANTES\\NDE *DESISTIR*",
  "frases": [
   {
@@ -80,7 +84,6 @@
    ],
    "aperto": 2.6,
    "zoom": "in",
-   "entrada": "soco",
    "estilo": "impacto",
    "pausa": 0.45
   },
@@ -116,6 +119,5 @@
    "zoom": "out",
    "estilo": "cta"
   }
- ],
- "saida": "ninguem-vai-vir.mp4"
+ ]
 }

@@ -113,3 +113,18 @@ Cortar vídeo dos outros sem autorização rende strike de direitos autorais e o
 YouTube nega monetização por "conteúdo reutilizado". Use canais que liberam
 cortes (muitos streamers têm regra pública ou programa de clipadores), mantenha o
 crédito que o `.json` já gera e edite o título/gancho de cada corte antes de postar.
+
+## Canal de fé e motivacional (`fe/`)
+
+Um segundo canal, separado dos Clipes Leonida: vídeos verticais de 22 a 32 s com narração na voz B
+(OmniVoice, `vozes/vozes.json`), pinturas em domínio público com zoom lento, legenda palavra a
+palavra e versículo real. Saem sem música, porque o som em alta entra na hora de postar.
+
+```bash
+source fe/preparar.sh                         # ambiente (torch CPU, motor de voz, whisper)
+$FE_PY -m fe produzir fe/roteiros/*.json      # voz + vídeo + capa + textos em saida-fe/postar/
+```
+
+O roteiro de uma rodada (escrever roteiros, produzir, conferir e colocar na biblioteca do canal)
+está em `fe/AGENTE.md`. Uma tarefa agendada executa esse roteiro uma vez por dia.
+Na CPU, cada vídeo leva ~6 min: ~4,5 de voz e ~1 de montagem.
