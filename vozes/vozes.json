@@ -1,0 +1,16 @@
+{
+  "motivacional": {
+    "nome": "voz B (homem mais velho), escolhida em 24/11/2026",
+    "ref_audio": "vozes/motivacional-B.wav",
+    "ref_text": "Se você está cansado, escuta isso. Deus viu cada lágrima que ninguém percebeu.",
+    "speed": 0.85,
+    "origem": "voz sintética criada no OmniVoice com a descrição 'male, elderly, low pitch'"
+  },
+  "gameplay": {
+    "nome": "voz B2, escolhida em 24/11/2026 para os cortes narrados do Leonida Clipes",
+    "ref_audio": "vozes/gameplay-B2-referencia.wav",
+    "ref_text": "Se você está cansado, escuta isso. Deus viu cada lágrima que ninguém percebeu.",
+    "speed": 0.95,
+    "origem": "voz sintética: referência gerada no Kokoro (pm_alex, português do Brasil) e clonada no OmniVoice"
+  }
+}
