@@ -172,8 +172,9 @@ saiu errada, monte de novo informando a posição dela no vídeo original com `-
 (meça num quadro do arquivo em `trabalho/`). Se nem assim ficar boa, apague o `.mp4` e o
 `.json` desse corte de `saida/` e siga com os outros.
 
-O nome do canal é **Clipes Leonida** (nunca "Leonida Clipes"). Os cortes não levam mais o nome
-escrito na tela: a marca vai ser uma marca d'água em imagem, que o dono do canal ainda vai enviar.
+O nome do canal é **Clipes Leonida** (nunca "Leonida Clipes"). Todo corte sai com o selo do canal
+no canto de cima (a logo do flamingo com o nome em círculo, `marca/selo.png`), posto sozinho pelo
+código; não escreva o nome do canal em texto na tela.
 Nos 3 segundos finais entra sozinha a chamada "SEGUE PRA MAIS / GTA 6 TODO DIA" sobre o jogo
 (`cortes/legendas.py`): não tire e não repita o pedido de seguir no gancho.
 

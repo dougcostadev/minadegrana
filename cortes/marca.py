@@ -6,13 +6,16 @@ from PIL import Image, ImageDraw, ImageFont
 FONTE = "/usr/share/fonts/opentype/inter/InterDisplay-Black.otf"
 
 
-def selo(destino, logo=None, texto="CLIPES LEONIDA", lado=600, repeticoes=2):
+def selo(destino, logo=None, texto="CLIPES LEONIDA", lado=600, repeticoes=2,
+         fundo=(24, 8, 34, 240), borda=(255, 46, 126, 255)):
     """Gera um PNG transparente de `lado` x `lado`. Sem `logo`, o miolo fica só com as iniciais."""
     s = 2  # desenha no dobro e reduz, para as letras saírem lisas
     L = lado * s
     img = Image.new("RGBA", (L, L), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-    d.ellipse((0, 0, L - 1, L - 1), fill=(12, 12, 14, 215))
+    d.ellipse((0, 0, L - 1, L - 1), fill=borda)
+    e = int(L * 0.012)
+    d.ellipse((e, e, L - 1 - e, L - 1 - e), fill=fundo)
     miolo = int(L * 0.62)
     m0 = (L - miolo) // 2
     if logo:
@@ -23,6 +26,7 @@ def selo(destino, logo=None, texto="CLIPES LEONIDA", lado=600, repeticoes=2):
         mascara = Image.new("L", (miolo, miolo), 0)
         ImageDraw.Draw(mascara).ellipse((0, 0, miolo - 1, miolo - 1), fill=255)
         img.paste(arte, (m0, m0), Image.composite(arte.getchannel("A"), Image.new("L", (miolo, miolo), 0), mascara))
+        d.ellipse((m0 - e, m0 - e, m0 + miolo + e, m0 + miolo + e), outline=borda, width=e * 2)
     else:
         d.ellipse((m0, m0, m0 + miolo, m0 + miolo), fill=(200, 30, 99, 255))
         f = ImageFont.truetype(FONTE, int(miolo * 0.5))

@@ -12,6 +12,20 @@ def _esc(caminho):
 
 TETO_MB = 19  # a pauta online aceita vídeos de até 20 MiB
 
+# Marca d'água do canal: o selo redondo com a logo e o nome em volta (gerado por cortes/marca.py).
+SELO = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "marca", "selo.png")
+SELO_COM_CAM = (34, 176, 176)   # x, y, lado: canto de cima da câmera, abaixo da barra dos aplicativos
+SELO_SEM_CAM = (34, 318, 160)   # sem câmera o gancho ocupa o topo, então o selo desce para o jogo
+
+
+def _selo(entrada, saida, com_cam=True):
+    """Trecho de filtro que sobrepõe o selo em `entrada`; sem o arquivo do selo, só repassa o vídeo."""
+    if not os.path.exists(SELO):
+        return f"[{entrada}]null[{saida}]"
+    x, y, lado = SELO_COM_CAM if com_cam else SELO_SEM_CAM
+    return (f"movie='{_esc(SELO)}',scale={lado}:{lado}:flags=lanczos,format=rgba,colorchannelmixer=aa=0.92[selo];"
+            f"[{entrada}][selo]overlay={x}:{y}[{saida}]")
+
 
 def _duracao(arquivo):
     r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of",
@@ -57,9 +71,10 @@ def _censura(censura, tarjas):
     return filtros
 
 
-def carimbar(origem, destino, ass):
-    """Queima um .ass (marca e chamada) num vídeo vertical já pronto, respeitando o teto de tamanho."""
-    subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", origem, "-vf", f"ass='{_esc(ass)}'",
+def carimbar(origem, destino, ass=None, com_cam=True):
+    """Põe o selo (e queima um .ass, se houver) num vídeo vertical já pronto, respeitando o teto de tamanho."""
+    filtro = (f"[0:v]ass='{_esc(ass)}'[v0];" if ass else "[0:v]null[v0];") + _selo("v0", "v", com_cam)
+    subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", origem, "-filter_complex", filtro, "-map", "[v]", "-map", "0:a?",
                     "-c:v", "libx264", "-preset", "veryfast", *_taxa(_duracao(origem)), "-pix_fmt", "yuv420p",
                     "-c:a", "copy", "-movflags", "+faststart", destino], check=True)
     return destino
@@ -87,9 +102,10 @@ def renderizar(origem, destino, inicio=None, fim=None, cam=None, legenda_ass=Non
             f"[fundo][jogo]overlay=0:(H-h)/2[v0]"
         )
     if legenda_ass:
-        filtro += f";[v0]ass='{_esc(legenda_ass)}'[v]"
+        filtro += f";[v0]ass='{_esc(legenda_ass)}'[v1]"
     else:
-        filtro += ";[v0]null[v]"
+        filtro += ";[v0]null[v1]"
+    filtro += ";" + _selo("v1", "v", com_cam=bool(cam))
 
     segundos = (fim - inicio) if (inicio is not None and fim is not None) else _duracao(origem)
     cmd = ["ffmpeg", "-y", "-v", "error"]
