@@ -190,7 +190,7 @@ GUIA = [
 
 
 def escrever_md(ordem, caminho):
-    linhas = ["# Cortes prontos — Leonida Clipes", "", f"{len(ordem)} cortes com os textos de cada rede.", ""]
+    linhas = ["# Cortes prontos — Clipes Leonida", "", f"{len(ordem)} cortes com os textos de cada rede.", ""]
     for n, m in enumerate(ordem, 1):
         r = m["redes"]
         linhas += [

@@ -1,6 +1,6 @@
 ---
 name: cortes-do-dia
-description: Roda agora uma rodada de produção do canal Leonida Clipes — busca os clipes de GTA 6 que viralizaram nas últimas 24h nos canais acompanhados, avalia, monta os cortes verticais com gancho e textos de cada rede e coloca tudo na biblioteca de clipes. Use quando o usuário pedir "rodada", "mais clipes", "gera os cortes", "abastece a biblioteca" ou algo parecido.
+description: Roda agora uma rodada de produção do canal Clipes Leonida — busca os clipes de GTA 6 que viralizaram nas últimas 24h nos canais acompanhados, avalia, monta os cortes verticais com gancho e textos de cada rede e coloca tudo na biblioteca de clipes. Use quando o usuário pedir "rodada", "mais clipes", "gera os cortes", "abastece a biblioteca" ou algo parecido.
 ---
 
 # Cortes do dia

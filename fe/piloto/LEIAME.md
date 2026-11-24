@@ -1,4 +1,4 @@
-# Piloto do segmento de fé (canal separado do Leonida Clipes)
+# Piloto do segmento de fé (canal separado do Clipes Leonida)
 
 Rascunho de 24/11/2026, ainda sem produção automática. Os caminhos apontam para `/home/user/voz`,
 a pasta de trabalho onde o piloto foi montado.

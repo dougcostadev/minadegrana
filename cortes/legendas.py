@@ -35,7 +35,7 @@ def texto(palavras):
 
 
 # Identidade na tela: marca fixa no canto e chamada para seguir nos segundos finais.
-MARCA = "LEONIDA CLIPES"
+MARCA = None  # o canal (Clipes Leonida) vai usar marca d'água em imagem, não texto
 CHAMADA = "SEGUE PRA MAIS\\NGTA 6 TODO DIA"
 CHAMADA_SEG = 3.0
 Y_MARCA = 214          # com câmera em cima: abaixo da barra dos aplicativos

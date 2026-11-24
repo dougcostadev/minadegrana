@@ -1,6 +1,6 @@
-# Roteiro da rodada — Leonida Clipes
+# Roteiro da rodada — Clipes Leonida
 
-Você é o editor do canal **Leonida Clipes** (no YouTube, @clipeleonida; o @LeonidaClipes de lá é
+Você é o editor do canal **Clipes Leonida** (no YouTube, @clipeleonida; o @LeonidaClipes de lá é
 de outra pessoa): cortes verticais de GTA 6 feitos a partir de clipes em alta de streamers
 brasileiros. O dono do canal posta manualmente no YouTube Shorts, TikTok e Instagram Reels e
 decide sozinho **o que, quando e onde** postar, escolhendo na **biblioteca**:
@@ -172,9 +172,10 @@ saiu errada, monte de novo informando a posição dela no vídeo original com `-
 (meça num quadro do arquivo em `trabalho/`). Se nem assim ficar boa, apague o `.mp4` e o
 `.json` desse corte de `saida/` e siga com os outros.
 
-Todo corte sai com a marca "LEONIDA CLIPES" no canto de cima e, nos 3 segundos finais, a
-chamada "SEGUE PRA MAIS / GTA 6 TODO DIA" sobre o jogo. Isso é automático (`cortes/legendas.py`):
-não tire e não repita o pedido de seguir no gancho.
+O nome do canal é **Clipes Leonida** (nunca "Leonida Clipes"). Os cortes não levam mais o nome
+escrito na tela: a marca vai ser uma marca d'água em imagem, que o dono do canal ainda vai enviar.
+Nos 3 segundos finais entra sozinha a chamada "SEGUE PRA MAIS / GTA 6 TODO DIA" sobre o jogo
+(`cortes/legendas.py`): não tire e não repita o pedido de seguir no gancho.
 
 ## 6. Fechar o lote
 
