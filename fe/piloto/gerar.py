@@ -11,7 +11,7 @@ def modelo():
         _m = OmniVoice.from_pretrained("k2-fsa/OmniVoice", device_map="cpu", dtype=torch.float32, allow_tokenizer_fallback=True)
     return _m
 
-def falar(texto, saida, instruct=None, ref_audio=None, ref_text=None, speed=0.85, num_step=40, semente=7):
+def falar(texto, saida, instruct=None, ref_audio=None, ref_text=None, speed=0.85, num_step=16, semente=7):
     torch.manual_seed(semente)
     m = modelo()
     a = m.generate(text=texto, language="pt", instruct=instruct, ref_audio=ref_audio, ref_text=ref_text,
