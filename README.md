@@ -69,6 +69,9 @@ python -m cortes pacote               # vídeos e capas em saida/postar/
 python -m cortes linhas saida/assets.json   # documentos do banco, depois de anexar os vídeos
 ```
 
+Se a webcam sair errada num corte, `montar` aceita `--cam x:y:w:h` com a posição dela no
+vídeo original, igual ao `cortar`.
+
 `python -m cortes pagina` monta a página (`saida/pauta.html`) quando o layout muda.
 A lista de clipes já usados fica no documento `estado/usados` do mesmo banco
 (`python -m cortes estado carregar|exportar`). `python -m cortes canal` lista os Shorts
@@ -104,7 +107,9 @@ repositório `PRIVACIDADE` com o valor `public`.
 - **Download** (`pipeline.py`): baixa só o áudio para analisar e depois só os
   trechos escolhidos, não o VOD inteiro.
 - **Facecam** (`facecam.py`): detecta rosto em ~40 frames e fica com a região
-  onde ele aparece de forma estável (webcam não se mexe; rosto de NPC sim).
+  onde ele aparece de forma estável (webcam não se mexe; rosto de NPC sim). Um
+  "rosto" cravado no mesmo ponto em todos os frames (boneco na estante atrás do
+  streamer, foto fixa na tela) perde para o rosto que se mexe.
 - **Render** (`render.py`): ffmpeg, 30 fps, áudio normalizado em -14 LUFS.
 
 ## Direitos e monetização
