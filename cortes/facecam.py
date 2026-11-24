@@ -47,7 +47,7 @@ def detectar(caminho, amostras=40, presenca_min=0.3):
         return None  # rosto grande demais para ser webcam (close de cutscene)
     exata = _moldura(pequenos, escala, cx, cy, fw, fh)
     if exata:
-        return _enquadrar(exata, cx, cy)
+        return _enquadrar(exata, cx, cy, fh)
     # caixa 16:9 em volta do rosto (rosto ocupa ~1/3 da largura de uma webcam típica)
     w = min(L, fw * 3.2)
     h = min(A, w * 9 / 16)
@@ -56,7 +56,7 @@ def detectar(caminho, amostras=40, presenca_min=0.3):
     return tuple(int(v) // 2 * 2 for v in (x, y, w, h))
 
 
-def _enquadrar(caixa, cx, cy):
+def _enquadrar(caixa, cx, cy, fh=0):
     """Recorta, dentro da webcam, a janela 16:9 que o painel de cima usa, guiada pelo rosto.
 
     Webcam mais alta que 16:9 perde o que sobra em cima ou embaixo (é onde ficam as barras do
@@ -65,7 +65,8 @@ def _enquadrar(caixa, cx, cy):
     x, y, w, h = caixa
     if h > w * 9 / 16:
         alt = w * 9 / 16
-        y += float(np.clip(cy - y - 0.42 * alt, 0, h - alt))
+        # o rosto fica a 42% da altura, mas nunca tão alto que corte o topo da cabeça
+        y += float(np.clip(cy - y - max(0.42 * alt, 1.05 * fh), 0, h - alt))
         h = alt
     else:
         larg = h * 16 / 9
