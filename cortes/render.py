@@ -81,7 +81,7 @@ def carimbar(origem, destino, ass=None, com_cam=True):
 
 
 def renderizar(origem, destino, inicio=None, fim=None, cam=None, legenda_ass=None, censura=None,
-               tarjas=None):
+               tarjas=None, moldura=None):
     """Renderiza um corte. `cam` = (x, y, w, h) da webcam no vídeo original, ou None."""
     if cam:
         x, y, w, h = cam
@@ -105,7 +105,10 @@ def renderizar(origem, destino, inicio=None, fim=None, cam=None, legenda_ass=Non
         filtro += f";[v0]ass='{_esc(legenda_ass)}'[v1]"
     else:
         filtro += ";[v0]null[v1]"
-    filtro += ";" + _selo("v1", "v", com_cam=bool(cam))
+    if moldura:  # PNG do tamanho do vídeo com gancho, plaquinha do streamer e selo (cortes/ui.py)
+        filtro += f";movie='{_esc(moldura)}',format=rgba[ui];[v1][ui]overlay=0:0[v]"
+    else:
+        filtro += ";" + _selo("v1", "v", com_cam=bool(cam))
 
     segundos = (fim - inicio) if (inicio is not None and fim is not None) else _duracao(origem)
     cmd = ["ffmpeg", "-y", "-v", "error"]

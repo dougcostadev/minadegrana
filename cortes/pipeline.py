@@ -4,7 +4,7 @@ import os
 import re
 import subprocess
 
-from . import facecam, ganchos, legendas, momentos, postagem, render, yt
+from . import facecam, ganchos, legendas, momentos, postagem, render, ui, yt
 
 GANCHOS = [
     "ELE NÃO ACREDITOU NO QUE ACONTECEU NO GTA 6",
@@ -198,11 +198,13 @@ def processar_clipe(clipe, saida="saida", trabalho="trabalho", legendar=False, c
     # gancho na divisória entre a cam e o gameplay; legenda logo abaixo, sem cobrir o jogo
     y_gancho, y_legenda = (render.A_CAM - 70, render.A_CAM + 130) if caixa else (150, 330)
     y_censura = render.A_CAM + 580 if caixa else 900  # meio do painel do jogo
-    tem_texto = legendas.escrever_ass(ass, _duracao(bruto), palavras, y_legenda, g["gancho"], y_gancho,
+    # gancho, etiqueta do streamer e selo vão numa imagem só (cortes/ui.py); o .ass fica com o resto
+    tem_texto = legendas.escrever_ass(ass, _duracao(bruto), palavras, y_legenda, None, y_gancho,
                                       censura=censura, y_censura=y_censura,
                                       y_marca=legendas.Y_MARCA if caixa else legendas.Y_MARCA_SEM_CAM)
+    moldura = ui.moldura(os.path.join(trabalho, nome + ".ui.png"), g["gancho"], canal, com_cam=bool(caixa))
     render.renderizar(bruto, destino, cam=caixa, legenda_ass=ass if tem_texto else None,
-                      censura=censura, tarjas=tarjas)
+                      censura=censura, tarjas=tarjas, moldura=moldura)
 
     slug = clipe.get("slug") or canal.lower()
     meta = {

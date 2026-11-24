@@ -6,3 +6,4 @@ numpy
 google-api-python-client
 google-auth-oauthlib
 anthropic
+pillow  # desenha a identidade visual dos cortes (cortes/ui.py)
