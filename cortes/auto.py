@@ -6,7 +6,7 @@ from itertools import zip_longest
 
 import yt_dlp
 
-from . import clipes, pipeline, publicar, yt
+from . import clipes, meme, pipeline, publicar, yt
 
 
 # a Rockstar derruba vídeo com final da história; pula lives de zeramento
@@ -40,7 +40,7 @@ def estado_exportar(destino="saida/estado.json", processados="processados.txt", 
     ids = {i: d for i, d in usados(processados).items() if d >= corte}
     os.makedirs(os.path.dirname(destino) or ".", exist_ok=True)
     with open(destino, "w", encoding="utf-8") as f:
-        json.dump({"ids": ids, "atualizado": date.today().isoformat()}, f)
+        json.dump({"ids": ids, "atualizado": date.today().isoformat(), "memes": meme.usados()[-meme.MEMORIA:]}, f)
     return len(ids)
 
 
@@ -51,6 +51,8 @@ def estado_carregar(origem, processados="processados.txt"):
     for chave in ("data", "fields", "document"):  # o arquivo pode vir com um envelope
         if isinstance(doc.get(chave), dict) and "ids" in doc[chave]:
             doc = doc[chave]
+    if isinstance(doc.get("memes"), list):  # memes e fechos dos últimos clipes, para não repetir
+        meme.gravar_usados(doc["memes"])
     ja = usados(processados)
     novos = {i: d for i, d in (doc.get("ids") or {}).items() if i not in ja}
     with open(processados, "a", encoding="utf-8") as f:

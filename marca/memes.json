@@ -8,11 +8,234 @@
     "cavalo": "https://www.myinstants.com/media/sounds/cavalo.mp3",
     "suspense": "https://www.myinstants.com/media/sounds/cinematic-suspense-riser.mp3",
     "tome": "https://www.myinstants.com/media/sounds/tome-rodrigo-faro_xDXKGwq.mp3",
-    "uepa": "https://www.myinstants.com/media/sounds/uepa-mp3cut.mp3"
+    "uepa": "https://www.myinstants.com/media/sounds/uepa-mp3cut.mp3",
+    "gta-wasted": "https://www.myinstants.com/media/sounds/gta-v-death-sound-effect-102.mp3",
+    "gta-mission-passed": "https://www.myinstants.com/media/sounds/gta-san-andreas-mission-complete-sound-hq.mp3",
+    "chaves-da-zero-pra-ele": "https://www.myinstants.com/media/sounds/chaves-ai-que-burro-da-zero-pra-ele.mp3",
+    "chaves-isso-isso-isso": "https://www.myinstants.com/media/sounds/file5_HnMhZJG.mp3",
+    "calma-meu-filho": "https://www.myinstants.com/media/sounds/que-isso-meu-filho-calma-vai-dar-namoro.mp3",
+    "ele-gosta": "https://www.myinstants.com/media/sounds/tmpd9mca4be.mp3",
+    "olha-a-pedra": "https://www.myinstants.com/media/sounds/olha_a_pedra.mp3",
+    "irra": "https://www.myinstants.com/media/sounds/irra-ratinho.mp3",
+    "sabe-de-nada-inocente": "https://www.myinstants.com/media/sounds/sabe-de-nada.mp3",
+    "ta-pegando-fogo-bicho": "https://www.myinstants.com/media/sounds/ta-pegando-fogo-bicho1.mp3",
+    "e-brincadeira-hein": "https://www.myinstants.com/media/sounds/e-brincadeira-hein.mp3",
+    "bruh": "https://www.myinstants.com/media/sounds/movie_1.mp3",
+    "erro-do-windows": "https://www.myinstants.com/media/sounds/windows-xp-critical-error-full-version.mp3",
+    "trombone-triste": "https://www.myinstants.com/media/sounds/sadtrombone.swf.mp3",
+    "gongo": "https://www.myinstants.com/media/sounds/shinese-gong.mp3",
+    "dun-dun": "https://www.myinstants.com/media/sounds/dun_dun_1.mp3",
+    "bonk": "https://www.myinstants.com/media/sounds/bonk_7zPAD7C.mp3",
+    "cano-de-metal": "https://www.myinstants.com/media/sounds/metal-pipe-clang.mp3",
+    "fail-bob-esponja": "https://www.myinstants.com/media/sounds/spongebob-fail.mp3",
+    "mission-failed": "https://www.myinstants.com/media/sounds/mission-failed-well-get-em-next-time-sound-effect-zxhixnbk.mp3",
+    "emotional-damage": "https://www.myinstants.com/media/sounds/emotional-damage-meme.mp3",
+    "risadas-de-fundo": "https://www.myinstants.com/media/sounds/cggasa.mp3",
+    "que-absurdo": "https://www.myinstants.com/media/sounds/que-absurdo-xaropinho.mp3",
+    "aplausos": "https://www.myinstants.com/media/sounds/aplausos-1_GrqkPux.mp3",
+    "grilos": "https://www.myinstants.com/media/sounds/crickets-sound.mp3",
+    "som-de-derrota": "https://www.myinstants.com/media/sounds/som-derrota.mp3",
+    "olha-a-porrada": "https://www.myinstants.com/media/sounds/faustao-olha-a-porrada.mp3",
+    "olha-o-gol": "https://www.myinstants.com/media/sounds/olha-o-gol.mp3",
+    "tapa": "https://www.myinstants.com/media/sounds/slap-sound-effect-free_WTCgfWx.mp3"
   },
   "gifs": {
     "errou": "https://media.tenor.com/VYsoMg08CSoAAAPo/faustao-silva.mp4",
     "hamster-triste": "https://media.tenor.com/OroVCOXbuUUAAAPo/sadhamstergirl.mp4",
-    "gato-assustado": "https://media.tenor.com/rZHUWvNpOaoAAAPo/suh-cat.mp4"
+    "gato-assustado": "https://media.tenor.com/rZHUWvNpOaoAAAPo/suh-cat.mp4",
+    "nazare-confusa": "https://media.tenor.com/YAOhbZ5GZy4AAAPo/nazar%C3%A9.mp4",
+    "gretchen": "https://media.tenor.com/IRdLNyFokzMAAAPo/zonegif-pandlrg.mp4",
+    "ines-brasil-palmas": "https://media.tenor.com/HCuR3pvHqdsAAAPo/um-drag-ih-ines-brasil.mp4",
+    "tiringa-perai": "https://media.tenor.com/XTW6uCVMJIQAAAPo/tiringa-charles-e-tiringa.mp4",
+    "cachorro-caramelo": "https://media.tenor.com/VjDP2psp13sAAAPo/cachorrinho-doguinho.mp4",
+    "macaco-pensando": "https://media.tenor.com/hxY0c0sHYx0AAAPo/monkey-thinking-monkey.mp4",
+    "homem-aranha-apontando": "https://media.tenor.com/QXVs4QWLlzkAAAPo/spider-man.mp4",
+    "travolta-confuso": "https://media.tenor.com/wXPjnH42shwAAAPo/john-travolta-vincent-vega.mp4",
+    "pica-pau-rindo": "https://media.tenor.com/WV6X_uG0ovEAAAPo/sugarfoot-woody-woodpecker.mp4",
+    "seu-madruga": "https://media.tenor.com/zmNq7ViuU_cAAAPo/sr-madruga-ta-vendo-%C3%A9-isso-ai.mp4",
+    "quico-chorando": "https://media.tenor.com/R7ktcBmu1KwAAAPo/quico-quiko.mp4",
+    "chapolin-tremendo": "https://media.tenor.com/_8tsPwqcTxEAAAPo/chapolin-astucia.mp4",
+    "silvio-santos-rindo": "https://media.tenor.com/fpVXHMC7czkAAAPo/laugh.mp4",
+    "galvao-clima-terrivel": "https://media.tenor.com/yepswYVI2Y4AAAPo/galvao-vai-se-criando-um-clima-terrivel.mp4",
+    "neymar-caindo": "https://media.tenor.com/AN4yMpqbEAYAAAPo/work-neymar.mp4",
+    "patrick-rindo": "https://media.tenor.com/tOIJT1iCKW4AAAPo/dumb-stupid-patrick.mp4",
+    "homer-arbusto": "https://media.tenor.com/pXe-GokoyA0AAAPo/the-s-impsons-bush.mp4",
+    "michael-scott-nao": "https://media.tenor.com/ylEjkilSyXwAAAPo/no-god-please-no-no.mp4",
+    "pikachu-surpreso": "https://media.tenor.com/UZJd1pjj4NMAAAPo/surprised-pikachu.mp4",
+    "facepalm": "https://media.tenor.com/ZFc20z8DItkAAAPo/facepalm-really.mp4",
+    "explosao": "https://media.tenor.com/nANqORN7qhQAAAPo/explosion-explode.mp4",
+    "gta-here-we-go-again": "https://media.tenor.com/jr9t3yabkH8AAAPo/ah-shit-here-we-go-again.mp4",
+    "gta-mission-passed": "https://media.tenor.com/VWNeeH_SdIwAAAPo/gta-respect.mp4",
+    "gta-cj-acenando": "https://media.tenor.com/MHi_sQmVI_sAAAPo/cj-gta.mp4",
+    "bebe-correndo": "https://media.tenor.com/I52cHniuBdMAAAPo/enfant-balthazar.mp4",
+    "dinheiro-chovendo": "https://media.tenor.com/9zYmBF6uI1sAAAPo/nap-time.mp4",
+    "comemorando-gol": "https://media.tenor.com/3ZKhtVl2qOcAAAPo/comemora%C3%A7%C3%A3o-yuri-alberto-2022-jogador-do-corinthians-yuri-alberto-comemorando-o-gol.mp4",
+    "palmas-ironicas": "https://media.tenor.com/iD_ZhWqV6JAAAAPo/votay-serious-face.mp4",
+    "deu-ruim": "https://media.tenor.com/Kxe_haLqrcIAAAPo/michael-scott-the-office.mp4",
+    "chorando-de-rir": "https://media.tenor.com/owDPfnfXWBYAAAPo/nazare-tedesco-rindo.mp4",
+    "tremendo-de-medo": "https://media.tenor.com/ToeZjgf1M4kAAAPo/%D8%AE%D9%88%D9%81-%D8%AE%D8%A7%D8%A6%D9%81.mp4",
+    "olhar-de-julgamento": "https://media.tenor.com/-fgf8N8gFw0AAAPo/up-and.mp4",
+    "mente-explodindo": "https://media.tenor.com/3eIvVsG3yPYAAAPo/the-universe-tim-and-eric-mind-blown.mp4",
+    "cachorro-desconfiado": "https://media.tenor.com/wy2zHeWyf2gAAAPo/side-eye-dog-suspicious-look.mp4",
+    "vergonha-alheia": "https://media.tenor.com/UyAJ2mS335IAAAPo/bbb-karol-conka.mp4",
+    "calma-calabreso": "https://media.tenor.com/0jH-zpLZcV8AAAPo/dan%C3%A7a.mp4",
+    "sabe-de-nada-inocente": "https://media.tenor.com/_X4R0ox-s88AAAPo/tchan-inocente.mp4",
+    "ednaldo-joinha": "https://media.tenor.com/EU-VlxYFkV4AAAPo/ednaldo-pereira-bem-vindo.mp4",
+    "receba": "https://media.tenor.com/KufboHmMzoIAAAPo/recaba-luva-de-pedreiro.mp4",
+    "casimiro-rindo": "https://media.tenor.com/vMjKG64OFW0AAAPo/casimiro-casimito.mp4",
+    "to-passada": "https://media.tenor.com/bR-HeTK8KuYAAAPo/rodgs.mp4",
+    "policia-no-retrovisor": "https://media.tenor.com/dTZ1354OIJMAAAPo/police.mp4"
+  },
+  "sons_ate": {
+    "gta-wasted": 3.6,
+    "gta-mission-passed": 4.0,
+    "ta-pegando-fogo-bicho": 3.5,
+    "risadas-de-fundo": 3.0,
+    "gongo": 3.0,
+    "aplausos": 3.0,
+    "suspense": 6.0,
+    "olha-o-gol": 3.5,
+    "violino-triste": 3.4
+  },
+  "sons_volume": {
+    "ele-gosta": 3.0,
+    "e-brincadeira-hein": 2.0,
+    "que-absurdo": 2.0,
+    "errou": 4.0,
+    "risadas-de-fundo": 2.2,
+    "tome": 3.0
+  },
+  "guia": {
+    "susto e choque": {
+      "gifs": [
+        "gato-assustado",
+        "pikachu-surpreso",
+        "to-passada",
+        "mente-explodindo",
+        "chapolin-tremendo",
+        "tremendo-de-medo"
+      ],
+      "sons": [
+        "boom",
+        "dun-dun",
+        "cano-de-metal",
+        "gongo",
+        "irra"
+      ]
+    },
+    "deu errado": {
+      "gifs": [
+        "deu-ruim",
+        "michael-scott-nao",
+        "facepalm",
+        "neymar-caindo",
+        "galvao-clima-terrivel",
+        "quico-chorando",
+        "explosao",
+        "hamster-triste",
+        "errou"
+      ],
+      "sons": [
+        "errou",
+        "trombone-triste",
+        "som-de-derrota",
+        "fail-bob-esponja",
+        "mission-failed",
+        "erro-do-windows",
+        "bruh",
+        "chaves-da-zero-pra-ele",
+        "violino-triste",
+        "emotional-damage"
+      ]
+    },
+    "GTA": {
+      "gifs": [
+        "gta-here-we-go-again",
+        "gta-mission-passed",
+        "gta-cj-acenando",
+        "policia-no-retrovisor"
+      ],
+      "sons": [
+        "gta-wasted",
+        "gta-mission-passed"
+      ]
+    },
+    "confusão": {
+      "gifs": [
+        "nazare-confusa",
+        "travolta-confuso",
+        "macaco-pensando",
+        "cachorro-desconfiado"
+      ],
+      "sons": [
+        "disco-arranhado",
+        "grilos",
+        "rapaz",
+        "que-absurdo"
+      ]
+    },
+    "risada e deboche": {
+      "gifs": [
+        "pica-pau-rindo",
+        "silvio-santos-rindo",
+        "chorando-de-rir",
+        "casimiro-rindo",
+        "patrick-rindo",
+        "palmas-ironicas",
+        "sabe-de-nada-inocente",
+        "olhar-de-julgamento",
+        "vergonha-alheia"
+      ],
+      "sons": [
+        "cavalo",
+        "risadas-de-fundo",
+        "sabe-de-nada-inocente",
+        "e-brincadeira-hein",
+        "ele-gosta",
+        "aplausos"
+      ]
+    },
+    "fuga e pressa": {
+      "gifs": [
+        "homer-arbusto",
+        "bebe-correndo",
+        "tiringa-perai",
+        "calma-calabreso"
+      ],
+      "sons": [
+        "suspense",
+        "calma-meu-filho",
+        "olha-a-pedra"
+      ]
+    },
+    "deu certo": {
+      "gifs": [
+        "comemorando-gol",
+        "dinheiro-chovendo",
+        "receba",
+        "ednaldo-joinha",
+        "cachorro-caramelo",
+        "ines-brasil-palmas",
+        "gretchen"
+      ],
+      "sons": [
+        "olha-o-gol",
+        "chaves-isso-isso-isso",
+        "uepa",
+        "tome"
+      ]
+    },
+    "pancada e culpa": {
+      "gifs": [
+        "homem-aranha-apontando",
+        "seu-madruga"
+      ],
+      "sons": [
+        "bonk",
+        "tapa",
+        "olha-a-porrada",
+        "ta-pegando-fogo-bicho"
+      ]
+    }
   }
 }

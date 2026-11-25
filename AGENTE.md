@@ -150,8 +150,8 @@ da tabela, escolha a mais conservadora.
 
 O formato do **Clipes Leonida** é edit de meme: o clipe vira uma piada montada, com pausa no
 ponto de virada, zoom, legenda de meme, figurinha (GIF) e efeito sonoro. Não tem narrador e não
-tem emoji. O exemplo aprovado pelo dono do canal está em `marca/receita-exemplo.json`: leia antes
-de editar o primeiro clipe da rodada e siga o mesmo espírito.
+tem emoji. Há três receitas de exemplo em `marca/receitas/` (a da van foi a primeira aprovada pelo
+dono do canal): leia uma delas antes de editar o primeiro clipe da rodada, para ver a gramática.
 
 O código põe sozinho, em todo corte: a capa no primeiro quadro, a placa do gancho na divisória,
 a etiqueta "DA LIVE DE …" (nunca cite Twitch, Kick ou outra plataforma, em lugar nenhum), o selo
@@ -182,6 +182,8 @@ tempos são os do corte limpo. Corte o tempo morto: o vídeo final deve ter de 1
 | `{"tipo": "clipe", "de": 9.0, "ate": 15.8}` | trecho do clipe | o grosso do vídeo |
 | `{"tipo": "pausa", "em": 15.8, "dur": 1.7, "alvo": [0.42, 0.66], "zoom": 1.45}` | congela o quadro e dá zoom no `alvo` (frações da tela inteira: x da esquerda, y do topo). Com `"lento": true, "pb": true` vira o final triste em preto e branco | marcar a virada ou fechar a piada |
 | `{"tipo": "rosto", "de": 18.4, "ate": 19.6, "foco": [0.5, 0.66]}` | o rosto do streamer em tela cheia (só quando há câmera); `foco` é onde o rosto está dentro do painel da câmera | a reação |
+| `{"tipo": "clipe", "de": 20.0, "ate": 21.5, "velocidade": 0.5}` | o trecho em câmera lenta (0.5) ou acelerado (até 2) | o impacto visto devagar, ou um replay (repita o mesmo trecho logo depois do original) |
+| `{"tipo": "clipe", "de": 9.0, "ate": 12.0, "zoom": 1.5, "alvo": [0.6, 0.7]}` | o trecho inteiro aproximado num ponto da tela | mostrar um detalhe que passaria batido |
 
 Qualquer bloco aceita estes enfeites (um objeto ou uma lista; `em` é o segundo do clipe, `atraso`
 conta do início do bloco):
@@ -195,17 +197,40 @@ conta do início do bloco):
 procure com `python -m cortes meme sons "termo"` e `python -m cortes meme gifs "termo"` e use o
 endereço devolvido no lugar do nome. Veja o GIF antes de usar (baixe e extraia um quadro).
 
+### Variedade (a reclamação número um do dono do canal)
+
+Ele já reclamou que os clipes estavam repetindo os mesmos memes e ficando enjoativos. Cada clipe
+tem de parecer editado para ele, não saído de um molde. Os exemplos em `marca/receitas/` servem
+só para ver a gramática: **não copie a estrutura deles**.
+
+O código recusa a receita que repetir: uma figurinha usada nos últimos 12 clipes, um som usado
+nos últimos 3 (menos `boom`, `disco-arranhado` e `suspense`), o final em preto e branco se ele
+fechou um dos últimos 4 clipes, ou mais de 2 figurinhas no mesmo clipe. Antes de escrever a
+receita, rode `python -m cortes meme acervo`: ele lista o que está livre, separado por tipo de
+momento (susto, deu errado, GTA, confusão, risada, fuga, deu certo, pancada).
+
+Escolha de 2 a 4 destes recursos, em combinação diferente da dos outros clipes da rodada:
+
+- pausa com zoom na virada;
+- rosto do streamer em tela cheia na reação;
+- câmera lenta no impacto, ou replay em câmera lenta logo depois;
+- zoom parado num detalhe enquanto a cena corre;
+- legenda com a frase do próprio streamer;
+- som no quadro exato do impacto;
+- figurinha que comenta o que aconteceu (meme de GTA quando couber: `gta-wasted` se o personagem
+  morre, `gta-mission-passed` se dá certo, `gta-here-we-go-again` se ele repete o erro).
+
+O fecho também muda de clipe para clipe: corte seco na frase final; rosto em tela cheia rindo ou
+gritando; replay em câmera lenta; pausa colorida com uma legenda; meme de GTA; e só de vez em
+quando o final triste em preto e branco. Se você achar numa busca um GIF ou som que encaixou bem
+e não está no acervo, diga no resumo final, para ele entrar.
+
 Regras do edit:
 
 - **Específico, não genérico.** A legenda e o meme têm de ser sobre o que acontece neste clipe.
   A melhor legenda costuma ser a frase do próprio streamer, entre aspas.
 - **De 3 a 6 enfeites por vídeo.** Um na virada, um na reação, um no fecho; o resto só se couber.
   Tela poluída mata a piada.
-- **Não repita o fecho.** Na mesma rodada, cada clipe fecha de um jeito: o mesmo GIF, o mesmo som
-  e o final triste em preto e branco aparecem em um clipe só. O `hamster-triste` entra no máximo
-  uma vez por rodada; para os outros, busque um GIF que tenha a ver com o que aconteceu
-  (`python -m cortes meme gifs "termo"`) ou feche com a reação do streamer em tela cheia.
-- **Som no tempo certo.** O efeito entra no quadro exato da virada, não meio segundo depois.
 - Texto sem palavrão, sem termo sexual, sem ofensa a grupo de pessoas e sem inventar fato.
 - Memes e sons de gente real só em tom de brincadeira, nunca para humilhar alguém.
 

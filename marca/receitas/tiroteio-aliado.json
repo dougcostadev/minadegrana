@@ -1,0 +1,22 @@
+{
+  "blocos": [
+    {"tipo": "clipe", "de": 1.8, "ate": 6.3,
+     "texto": {"texto": "ATIRANDO EM TUDO\nQUE SE MEXE", "atraso": 0.3, "dur": 2.6}},
+    {"tipo": "pausa", "em": 6.3, "dur": 1.9, "alvo": [0.68, 0.62], "zoom": 1.45,
+     "texto": [{"texto": "O DETALHE:", "pos": "cima", "atraso": 0.15, "tam": 124},
+               {"texto": "ESSE É ALIADO", "pos": "baixo", "cor": "amarelo", "atraso": 0.7, "tam": 146}],
+     "som": ["disco-arranhado", {"nome": "errou", "atraso": 0.7, "volume": 4.0}]},
+    {"tipo": "clipe", "de": 6.3, "ate": 8.6},
+    {"tipo": "clipe", "de": 11.0, "ate": 13.1},
+    {"tipo": "rosto", "de": 13.1, "ate": 14.65, "foco": [0.44, 0.45], "som": "boom", "tremer": 0.4,
+     "texto": {"texto": "\"ESQUECI QUE ERA\nMEU AMIGO\"", "atraso": 0.15, "cor": "amarelo"}},
+    {"tipo": "clipe", "de": 19.9, "ate": 21.7,
+     "meme": {"nome": "https://media.tenor.com/pXe-GokoyA0AAAPo/the-s-impsons-bush.mp4", "pos": "dir-cima", "larg": 340},
+     "texto": {"texto": "SAINDO DE FININHO", "atraso": 0.1}},
+    {"tipo": "clipe", "de": 29.3, "ate": 31.6},
+    {"tipo": "pausa", "em": 6.9, "dur": 3.2, "alvo": [0.62, 0.6], "zoom": 1.35, "lento": true, "pb": true,
+     "som": {"nome": "violino-triste", "atraso": 0.1, "volume": 0.85, "ate": 3.2},
+     "meme": {"nome": "https://media.tenor.com/JOc2csNU1-kAAAPo/cat.mp4", "atraso": 0.4, "pos": "esq-baixo", "larg": 300},
+     "texto": {"texto": "DESCULPA,\nAMIGUINHO", "atraso": 0.4, "x": 680}}
+  ]
+}

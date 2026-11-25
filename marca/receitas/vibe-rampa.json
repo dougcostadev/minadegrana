@@ -1,0 +1,21 @@
+{
+  "blocos": [
+    {"tipo": "clipe", "de": 1.6, "ate": 4.4},
+    {"tipo": "clipe", "de": 5.0, "ate": 7.7,
+     "texto": {"texto": "\"QUE VIBE, MANO\"", "em": 5.25, "dur": 2.0, "pos": "cima", "cor": "amarelo"}},
+    {"tipo": "pausa", "em": 7.7, "dur": 1.6, "alvo": [0.68, 0.72], "zoom": 1.4,
+     "texto": {"texto": "NO MEIO DO CAMINHO\nTINHA UMA RAMPA", "cor": "amarelo", "tam": 100},
+     "som": "disco-arranhado"},
+    {"tipo": "clipe", "de": 7.7, "ate": 12.75,
+     "som": {"nome": "boom", "em": 7.8},
+     "tremer": {"em": 7.8, "dur": 0.6},
+     "meme": {"nome": "gato-assustado", "em": 8.2, "dur": 2.3, "pos": "esq-cima", "larg": 300}},
+    {"tipo": "rosto", "de": 12.75, "ate": 13.9, "foco": [0.35, 0.62]},
+    {"tipo": "clipe", "de": 13.9, "ate": 18.35,
+     "texto": {"texto": "\"ACABOU A VIBE, MANO\"", "em": 15.0, "dur": 1.4, "pos": "meio", "cor": "amarelo", "tam": 100}},
+    {"tipo": "pausa", "em": 3.0, "dur": 3.2, "alvo": [0.5, 0.7], "zoom": 1.25, "lento": true,
+     "som": {"nome": "violino-triste", "atraso": 0.1, "volume": 0.85, "ate": 3.2},
+     "meme": {"nome": "https://media.tenor.com/u8M7kk5ZXmwAAAP1/banana-cat-crying.mp4", "atraso": 0.4, "pos": "dir-cima", "larg": 280},
+     "texto": {"texto": "EM MEMÓRIA DA VIBE", "atraso": 0.4, "pos": "meio", "tam": 120}}
+  ]
+}

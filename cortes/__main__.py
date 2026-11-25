@@ -95,7 +95,7 @@ def main():
     tg = sub.add_parser("tags", help="carrega as hashtags do dia (documento estado/tags do banco) para os textos dos posts")
     tg.add_argument("arquivo", nargs="?")
     me = sub.add_parser("meme", help="acervo e busca de sons e GIFs de meme")
-    me.add_argument("acao", choices=["acervo", "sons", "gifs"])
+    me.add_argument("acao", choices=["acervo", "recentes", "sons", "gifs"])
     me.add_argument("termo", nargs="?")
     ca = sub.add_parser("canal", help="lista os Shorts públicos do canal no YouTube, com as views")
     ca.add_argument("--canal", default="@clipeleonida")
@@ -232,8 +232,20 @@ def main():
     if a.cmd == "meme":
         from . import meme
         if a.acao == "acervo":
-            for tipo, itens in meme.acervo().items():
-                print(f"{tipo}: {', '.join(sorted(itens))}")
+            fora = meme.bloqueados()
+            for momento, itens in meme.acervo()["guia"].items():
+                print(f"\n{momento.upper()}")
+                for tipo in ("gifs", "sons"):
+                    livres = [n for n in itens[tipo] if n not in fora[tipo]]
+                    print(f"  {tipo}: {', '.join(livres) or '(todos usados há pouco)'}")
+            print("\nBloqueados agora (usados nos últimos clipes): "
+                  + (", ".join(fora["gifs"] + fora["sons"]) or "nenhum")
+                  + ("; final em preto e branco também" if fora["pb"] else ""))
+        elif a.acao == "recentes":
+            fora = meme.bloqueados()
+            print("figurinhas bloqueadas:", ", ".join(fora["gifs"]) or "nenhuma")
+            print("sons bloqueados:", ", ".join(fora["sons"]) or "nenhum")
+            print("final em preto e branco:", "bloqueado" if fora["pb"] else "liberado")
         elif a.acao == "sons":
             for titulo, url in meme.buscar_sons(a.termo or ""):
                 print(f"{titulo[:44]:44}  {url}")

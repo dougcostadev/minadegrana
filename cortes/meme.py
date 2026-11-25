@@ -75,6 +75,82 @@ def recurso(tipo, nome, pasta="trabalho/memes"):
     return destino
 
 
+USADOS = os.path.join("saida", "memes-usados.json")
+MEMORIA = 40                                   # quantos clipes a lista de usados guarda
+JANELA = {"gifs": 12, "sons": 3, "pb": 4}       # por quantos clipes cada coisa fica sem poder repetir
+SONS_LIVRES = {"boom", "disco-arranhado", "suspense"}  # utilitários: não entram na trava
+
+
+def usados():
+    try:
+        with open(USADOS, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return []
+
+
+def gravar_usados(lista):
+    os.makedirs(os.path.dirname(USADOS), exist_ok=True)
+    with open(USADOS, "w", encoding="utf-8") as f:
+        json.dump(lista[-MEMORIA:], f, ensure_ascii=False)
+
+
+def _apelido(nome):
+    """Nome estável de um recurso: o apelido do acervo, ou o fim do endereço."""
+    if not str(nome).startswith("http"):
+        return str(nome)
+    for tipo in ("gifs", "sons"):
+        for k, u in acervo()[tipo].items():
+            if u == nome:
+                return k
+    return urllib.parse.unquote(str(nome).rstrip("/").split("/")[-1])
+
+
+def uso_da_receita(blocos):
+    """O que a receita usa: {"gifs": [...], "sons": [...], "pb": bool}."""
+    gifs, sons, pb = [], [], False
+    for b in blocos:
+        gifs += [_apelido(x["nome"]) for x in _lista(b.get("meme"), "nome")]
+        sons += [_apelido(x["nome"]) for x in _lista(b.get("som"), "nome")]
+        pb = pb or bool(b.get("pb"))
+    return {"gifs": gifs, "sons": sons, "pb": pb}
+
+
+def bloqueados(ignorar=None):
+    """O que não pode ser usado agora por ter aparecido nos últimos clipes."""
+    hist = [u for u in usados() if u.get("clipe") != ignorar]
+    fora = {"gifs": sorted({g for u in hist[-JANELA["gifs"]:] for g in u.get("gifs", [])}),
+            "sons": sorted({x for u in hist[-JANELA["sons"]:] for x in u.get("sons", [])} - SONS_LIVRES),
+            "pb": any(u.get("pb") for u in hist[-JANELA["pb"]:])}
+    return fora
+
+
+def conferir_repeticao(blocos, clipe=None):
+    """Recusa a receita que repete meme, som ou fecho usado há pouco. Devolve o uso, para registrar."""
+    uso, fora, erros = uso_da_receita(blocos), bloqueados(clipe), []
+    rep = sorted(set(uso["gifs"]) & set(fora["gifs"]))
+    if rep:
+        erros.append(f"figurinha(s) usada(s) nos últimos {JANELA['gifs']} clipes: {', '.join(rep)}")
+    rep = sorted(set(uso["sons"]) & set(fora["sons"]))
+    if rep:
+        erros.append(f"som(ns) usado(s) nos últimos {JANELA['sons']} clipes: {', '.join(rep)}")
+    if uso["pb"] and fora["pb"]:
+        erros.append(f"o final em preto e branco já fechou um dos últimos {JANELA['pb']} clipes: feche de outro jeito")
+    dobra = sorted({g for g in uso["gifs"] if uso["gifs"].count(g) > 1})
+    if dobra:
+        erros.append(f"figurinha repetida dentro do mesmo clipe: {', '.join(dobra)}")
+    if len(uso["gifs"]) > 2:
+        erros.append("mais de 2 figurinhas no mesmo clipe")
+    if erros:
+        raise ValueError("Receita recusada para não ficar repetitivo: " + "; ".join(erros)
+                         + ". Rode `python -m cortes meme recentes` para ver o que está bloqueado e escolha outra coisa.")
+    return uso
+
+
+def registrar_uso(clipe, uso):
+    gravar_usados([u for u in usados() if u.get("clipe") != clipe] + [{"clipe": str(clipe), **uso}])
+
+
 def _lista(v, chave):
     """Aceita um apelido, um objeto ou uma lista deles; devolve sempre uma lista de objetos."""
     if v is None or v is False:
@@ -83,11 +159,16 @@ def _lista(v, chave):
     return [{chave: i} if not isinstance(i, dict) else i for i in itens]
 
 
-def _trecho(origem, destino, de, ate, vf=None):
+def _trecho(origem, destino, de, ate, vf=None, velocidade=1.0):
     args = ["-ss", f"{de:.3f}", "-t", f"{ate - de:.3f}", "-i", origem]
-    if vf:
-        args += ["-vf", vf]
-    _ff(*args, "-af", "aresample=48000", "-t", f"{ate - de:.3f}", *ENC, destino)
+    filtros = [vf] if vf else []
+    audio = "aresample=48000"
+    if velocidade != 1.0:  # câmera lenta (0.5) ou acelerado (até 2)
+        filtros.append(f"setpts=PTS/{velocidade}")
+        audio = f"atempo={velocidade}," + audio
+    if filtros:
+        args += ["-vf", ",".join(filtros)]
+    _ff(*args, "-af", audio, "-t", f"{(ate - de) / velocidade:.3f}", *ENC, destino)
 
 
 def _pausa(origem, destino, em, dur, alvo, zoom, lento, pb, quadro):
@@ -126,8 +207,16 @@ def editar(limpo, destino, blocos, moldura=None, capa=None, com_cam=True, trabal
                 x = int(min(max(0, fx * L - 146), L - 292))
                 y = int(min(max(0, fy * A_CAM - 260), A_CAM - 520))
                 vf = f"crop=292:520:{x}:{y},scale={L}:{A}:flags=bicubic,eq=saturation=1.5:contrast=1.2,unsharp=7:7:1.5"
-            _trecho(limpo, arq, de, ate, vf)
-            dur = ate - de
+            if tipo == "clipe" and b.get("zoom"):  # aproximação parada num ponto, o bloco inteiro
+                z = float(b["zoom"])
+                fx, fy = b.get("alvo", (0.5, 0.65))
+                lw, lh = int(L / z) // 2 * 2, int(A / z) // 2 * 2
+                x = int(min(max(0, fx * L - lw / 2), L - lw))
+                y = int(min(max(0, fy * A - lh / 2), A - lh))
+                vf = f"crop={lw}:{lh}:{x}:{y},scale={L}:{A}:flags=bicubic"
+            vel = min(2.0, max(0.5, float(b.get("velocidade", 1.0))))
+            _trecho(limpo, arq, de, ate, vf, vel)
+            dur = (ate - de) / vel
         else:
             raise ValueError(f"tipo de bloco desconhecido: {tipo}")
         segs.append((arq, dur, b))
@@ -135,7 +224,7 @@ def editar(limpo, destino, blocos, moldura=None, capa=None, com_cam=True, trabal
     def quando(b, item, ini, dur, padrao=0.0):
         """Instante do item no vídeo final: `em` (tempo do clipe) ou `atraso` (a partir do início do bloco)."""
         if "em" in item and b.get("tipo", "clipe") != "pausa":
-            return ini + float(item["em"]) - float(b["de"])
+            return ini + (float(item["em"]) - float(b["de"])) / min(2.0, max(0.5, float(b.get("velocidade", 1.0))))
         return ini + float(item.get("atraso", padrao))
 
     eventos, tremidas, ocultar, figurinhas, sons, inicios = [], [], [], [], [], []
@@ -161,8 +250,10 @@ def editar(limpo, destino, blocos, moldura=None, capa=None, com_cam=True, trabal
             figurinhas.append((recurso("gifs", x["nome"]), a, min(fim, a + float(x["dur"])) if "dur" in x else fim,
                                x.get("pos", "dir-cima"), int(x.get("larg", 380))))
         for x in _lista(b.get("som"), "nome"):
-            sons.append((recurso("sons", x["nome"]), quando(b, x, ini, dur), float(x.get("volume", 1.0)),
-                         float(x.get("de", 0)), x.get("ate")))
+            ac = acervo()
+            sons.append((recurso("sons", x["nome"]), quando(b, x, ini, dur),
+                         float(x.get("volume", ac.get("sons_volume", {}).get(x["nome"], 1.0))),
+                         float(x.get("de", 0)), x.get("ate", ac.get("sons_ate", {}).get(x["nome"]))))
         if b.get("tipo") == "rosto" or b.get("sem_moldura"):
             ocultar.append((ini, fim))
         t = fim

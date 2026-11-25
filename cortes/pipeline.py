@@ -241,12 +241,14 @@ def processar_clipe(clipe, saida="saida", trabalho="trabalho", legendar=False, c
         capa = ui.capa(os.path.join(saida, nome + ".capa.jpg"), quadro, capa_titulo or g["gancho"].rstrip("."), canal,
                        rosto=rosto, destaque=capa_destaque, foco=capa_foco, evitar=caixa)
     blocos = (receita or {}).get("blocos") or [{"tipo": "clipe", "de": 0, "ate": duracao}]
+    uso = meme.conferir_repeticao(blocos, str(clipe["id"]))  # recusa meme, som ou fecho repetido
     qual = sum(ord(c) for c in str(clipe["id"]))  # a frase da chamada varia de um clipe para outro
     final = ui.chamada(os.path.join(trabalho, nome + ".cta.png"), com_cam=bool(caixa), indice=qual)
     estalo = ui.chamada(os.path.join(trabalho, nome + ".cta2.png"), com_cam=bool(caixa), indice=qual, estalo=True)
     meme.editar(limpo, destino, blocos, moldura=moldura, capa=capa, com_cam=bool(caixa), trabalho=trabalho,
                 chamada=final, estalo=estalo)
     render.compactar(destino)
+    meme.registrar_uso(clipe["id"], uso)
 
     slug = clipe.get("slug") or canal.lower()
     meta = {
