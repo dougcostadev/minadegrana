@@ -79,6 +79,9 @@ USADOS = os.path.join("saida", "memes-usados.json")
 MEMORIA = 40                                   # quantos clipes a lista de usados guarda
 JANELA = {"gifs": 12, "sons": 3, "pb": 4}       # por quantos clipes cada coisa fica sem poder repetir
 SONS_LIVRES = {"boom", "disco-arranhado", "suspense"}  # utilitários: não entram na trava
+# Ponto de partida quando o banco ainda não tem memória: descansa o que foi usado demais no começo.
+SEMENTE = [{"clipe": "inicio", "gifs": ["hamster-triste", "gato-assustado", "errou"],
+            "sons": ["violino-triste", "errou"], "pb": True}]
 
 
 def usados():

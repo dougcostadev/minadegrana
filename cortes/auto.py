@@ -51,8 +51,8 @@ def estado_carregar(origem, processados="processados.txt"):
     for chave in ("data", "fields", "document"):  # o arquivo pode vir com um envelope
         if isinstance(doc.get(chave), dict) and "ids" in doc[chave]:
             doc = doc[chave]
-    if isinstance(doc.get("memes"), list):  # memes e fechos dos últimos clipes, para não repetir
-        meme.gravar_usados(doc["memes"])
+    # memes e fechos dos últimos clipes, para não repetir; sem memória no banco, começa da semente
+    meme.gravar_usados(doc["memes"] if isinstance(doc.get("memes"), list) else meme.SEMENTE)
     ja = usados(processados)
     novos = {i: d for i, d in (doc.get("ids") or {}).items() if i not in ja}
     with open(processados, "a", encoding="utf-8") as f:
